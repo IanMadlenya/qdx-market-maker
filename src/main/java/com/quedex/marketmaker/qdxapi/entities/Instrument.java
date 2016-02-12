@@ -23,13 +23,14 @@ public final class Instrument {
         FINANCIAL, PHYSICAL
     }
 
+    private final String symbol;
     private final int instrumentId;
     private final InstrumentType instrumentType;
     private final BigDecimal tickSize;
     private final long issueDate;
     private final long expirationDate;
     private final String underlyingSymbol;
-    private final long notionalAmount;
+    private final int notionalAmount;
     private final SettlementMethod settlementMethod;
     private final BigDecimal feeFraction;
     private final BigDecimal takerToMakerFeeFraction;
@@ -40,6 +41,7 @@ public final class Instrument {
 
     @JsonCreator
     public Instrument(
+            @JsonProperty("symbol") String symbol,
             @JsonProperty("instrument_id") int instrumentId,
             @JsonProperty("type") Type type,
             @JsonProperty("option_type") OptionType optionType,
@@ -47,7 +49,7 @@ public final class Instrument {
             @JsonProperty("issue_date") long issueDate,
             @JsonProperty("expiration_date") long expirationDate,
             @JsonProperty("underlying_symbol") String underlyingSymbol,
-            @JsonProperty("notional_amount") long notionalAmount,
+            @JsonProperty("notional_amount") int notionalAmount,
             @JsonProperty("settlement_method") SettlementMethod settlementMethod,
             @JsonProperty("fee") BigDecimal feeFraction,
             @JsonProperty("taker_to_maker") BigDecimal takerToMaker,
@@ -56,6 +58,7 @@ public final class Instrument {
             @JsonProperty("first_notice_date") Long firstNoticeDate,
             @JsonProperty("strike") BigDecimal strike
     ) {
+        checkArgument(!symbol.isEmpty(), "Empty symbol");
         checkArgument(tickSize.compareTo(BigDecimal.ZERO) > 0, "tickSize=%s <=0", tickSize);
         checkArgument(issueDate > 0, "issueDate=%s <= 0", issueDate);
         checkArgument(expirationDate > 0, "expirationDate=%s <= 0", issueDate);
@@ -68,6 +71,7 @@ public final class Instrument {
         checkArgument(maintenanceMarginFraction.compareTo(BigDecimal.ZERO) >= 0,
                 "maintenanceMarginFraction=%s < 0", maintenanceMarginFraction);
 
+        this.symbol = symbol;
         this.instrumentId = instrumentId;
         if (type == Type.futures) {
             this.instrumentType = InstrumentType.FUTURES;
@@ -105,6 +109,10 @@ public final class Instrument {
         }
     }
 
+    public String getSymbol() {
+        return symbol;
+    }
+
     public int getInstrumentId() {
         return instrumentId;
     }
@@ -129,7 +137,7 @@ public final class Instrument {
         return underlyingSymbol;
     }
 
-    public long getNotionalAmount() {
+    public int getNotionalAmount() {
         return notionalAmount;
     }
 
@@ -175,9 +183,30 @@ public final class Instrument {
         return strike;
     }
 
+    public boolean isFutures() {
+        return instrumentType == InstrumentType.FUTURES;
+    }
+
+    public boolean isTraded(long currentTime) {
+        return issueDate < currentTime && currentTime < expirationDate;
+    }
+
+    /**
+     * @return price rounded down to tick size or tick size if it would be negative
+     */
+    public BigDecimal roundPriceToTickSide(BigDecimal price) {
+        BigDecimal remainder = price.remainder(tickSize);
+        BigDecimal result = price.subtract(remainder);
+        if (remainder.compareTo(BigDecimal.ZERO) < 0) {
+            return tickSize;
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("symbol", symbol)
                 .add("instrumentId", instrumentId)
                 .add("instrumentType", instrumentType)
                 .add("tickSize", tickSize)
@@ -195,11 +224,7 @@ public final class Instrument {
                 .toString();
     }
 
-    private enum Type {
-        futures, option
-    }
-
-    private enum OptionType {
-        CALL_EUROPEAN, PUT_EUROPEAN
-    }
+    // used only to decode JSON
+    private enum Type { futures, option }
+    private enum OptionType { CALL_EUROPEAN, PUT_EUROPEAN }
 }

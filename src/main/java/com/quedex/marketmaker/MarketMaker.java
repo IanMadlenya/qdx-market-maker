@@ -1,70 +1,107 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.endpoint.QdxEndpoint;
-import com.quedex.marketmaker.qdxapi.entities.LimitOrderSpec;
-import com.quedex.marketmaker.qdxapi.entities.OrderPlaceResult;
-import com.quedex.marketmaker.qdxapi.entities.OrderSide;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.quedex.marketmaker.qdxapi.entities.*;
 
-import java.math.BigDecimal;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
+import javax.annotation.concurrent.NotThreadSafe;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+@NotThreadSafe
+public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdateable {
 
-public class MarketMaker {
+    private final AccountStateUpdateable[] accountStateUpdateables;
+    private final InstrumentDataUpdateable[] instrumentDataUpdateables;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MarketMaker.class);
-    private static final int MAX_RETRY = 3;
+    private final InstrumentManager instrumentManager;
+    private final OrderPlacingStrategy orderPlacingStrategy;
 
-    private final QdxEndpoint qdxEndpoint;
+    private final List<Long> ordersToCancel = new ArrayList<>();
+    private final List<LimitOrderSpec> ordersToPlace = new ArrayList<>();
+    private final List<OrderModificationSpec> ordersToModify = new ArrayList<>();
+    private long orderIdCounter = 0;
 
-    public MarketMaker(QdxEndpoint qdxEndpoint) {
-        this.qdxEndpoint = checkNotNull(qdxEndpoint, "null qdxEndpoint");
+    private AccountState accountState;
+
+    public MarketMaker(
+            TimeProvider timeProvider,
+            MarketMakerConfiguration config,
+            InstrumentData instrumentData,
+            AccountState accountState
+    ) {
+        instrumentManager = new InstrumentManager(timeProvider, instrumentData.getInstrumentInfo());
+        RiskManager riskManager = new RiskManager(instrumentManager);
+        MarketDataManager marketDataManager = new MarketDataManager();
+        orderPlacingStrategy = new UniformFuturesOrderPlacingStrategy(
+                marketDataManager,
+                riskManager,
+                config.getNumLevels(),
+                config.getQtyOnLevel(),
+                config.getDeltaLimit(),
+                config.getSpreadFraction()
+        );
+
+        accountStateUpdateables = new AccountStateUpdateable[]{ riskManager };
+        instrumentDataUpdateables = new InstrumentDataUpdateable[]{ marketDataManager };
+
+        orderIdCounter = accountState.getPendingOrders().values()
+                .stream()
+                .flatMap(PendingOrders::stream)
+                .mapToLong(UserOrderInfo::getClientOrderId)
+                .max()
+                .orElse(0);
+
+        update(instrumentData);
+        update(accountState);
     }
 
-    public void runLoop() {
+    @Override
+    public void update(AccountState accountState) {
+        for (final AccountStateUpdateable accountStateUpdateable : accountStateUpdateables) {
+            accountStateUpdateable.update(accountState);
+        }
+        this.accountState = accountState;
+    }
 
-        qdxEndpoint.initialize();
-
-        while (!Thread.currentThread().isInterrupted()) {
-
-            System.out.println(withRetry(qdxEndpoint::getInstrumentData).getOrderBook().get("F.USD.MAR16"));
-            System.out.println(withRetry(qdxEndpoint::getSpotData));
-
-            OrderPlaceResult orderPlaceResult = withRetry(() -> qdxEndpoint.placeOrder(new LimitOrderSpec(
-                1, "F.USD.MAR16", OrderSide.BUY, 5, new BigDecimal("0.0025")
-            )));
-            withRetry(() -> qdxEndpoint.cancelOrder(1));
-
-            System.out.println(orderPlaceResult);
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    @Override
+    public void update(InstrumentData instrumentData) {
+        for (final InstrumentDataUpdateable instrumentDataUpdateable : instrumentDataUpdateables) {
+            instrumentDataUpdateable.update(instrumentData);
         }
     }
 
-    public void stop() {
-        Thread.currentThread().interrupt();
-        LOGGER.info("Stopping");
+    public void recalculate() {
+
+        ordersToPlace.clear();
+
+        for (final Instrument futures : instrumentManager.getTradedFutures()) {
+
+            ordersToPlace.addAll(
+                    orderPlacingStrategy.getOrders(futures).stream()
+                            .map(o -> o.toLimitOrderSpec(++orderIdCounter))
+                            .collect(Collectors.toList())
+            );
+        }
+
+        ordersToCancel.clear();
+        ordersToCancel.addAll(
+                accountState.getPendingOrders().values()
+                        .stream()
+                        .flatMap(PendingOrders::stream)
+                        .map(UserOrderInfo::getClientOrderId)
+                        .collect(Collectors.toList())
+        );
     }
 
-    private static <T> T withRetry(Callable<T> supplier) {
-        int retry = 0;
-        RuntimeException ex = null;
-        while (retry < MAX_RETRY) {
-            try {
-                return supplier.call();
-            } catch (Exception e) {
-                LOGGER.warn("Failure when retrying", e);
-                ex = new IllegalStateException("Failed after retries: " + MAX_RETRY, e);
-                retry++;
-            }
-        }
-        throw ex;
+    public List<Long> getOrdersToCancel() {
+        return ordersToCancel;
+    }
+
+    public List<LimitOrderSpec> getOrdersToPlace() {
+        return ordersToPlace;
+    }
+
+    public List<OrderModificationSpec> getOrdersToModify() {
+        return ordersToModify;
     }
 }

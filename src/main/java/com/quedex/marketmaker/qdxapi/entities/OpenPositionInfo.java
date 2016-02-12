@@ -3,7 +3,6 @@ package com.quedex.marketmaker.qdxapi.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 
 import javax.annotation.concurrent.Immutable;
 import java.math.BigDecimal;
@@ -20,17 +19,17 @@ public final class OpenPositionInfo {
     public enum Side {
         LONG {
             @Override
-            public BigDecimal value() {
-                return BigDecimal.ONE;
+            public int value() {
+                return 1;
             }
         }, SHORT {
             @Override
-            public BigDecimal value() {
-                return MINUS_ONE;
+            public int value() {
+                return -1;
             }
         };
 
-        public abstract BigDecimal value();
+        public abstract int value();
     }
 
     private final BigDecimal initialMargin;
@@ -68,8 +67,12 @@ public final class OpenPositionInfo {
         return positionSide;
     }
 
-    public long getPositionQuantity() {
+    public int getPositionQuantity() {
         return positionQuantity;
+    }
+
+    public int getPositionQuantitySigned() {
+        return positionQuantity * positionSide.value();
     }
 
     public Optional<BigDecimal> getPnl() {

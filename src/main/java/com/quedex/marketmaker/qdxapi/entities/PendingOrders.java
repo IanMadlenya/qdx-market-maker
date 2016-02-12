@@ -4,18 +4,19 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.concurrent.Immutable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Immutable
-public final class PendingOrders {
+public final class PendingOrders implements Iterable<UserOrderInfo> {
 
     private final ImmutableList<UserOrderInfo> orders;
     private final BigDecimal margin;
@@ -37,6 +38,15 @@ public final class PendingOrders {
 
     public BigDecimal getMargin() {
         return margin;
+    }
+
+    @Override
+    public Iterator<UserOrderInfo> iterator() {
+        return orders.iterator();
+    }
+
+    public Stream<UserOrderInfo> stream() {
+        return orders.stream();
     }
 
     @Override

@@ -10,7 +10,7 @@ public enum QdxEndPointProviderConfigKey {
     ACCOUNT_PASSWORD("accountPassword"),
     ACCOUNT_NONCE_GROUP("accountNonceGroup");
 
-    private static final String COMMON_PREFIX = "net.bmm.gateway.exchange.quedex";
+    private static final String COMMON_PREFIX = "com.quedex.marketmaker.qdxapi";
     private static final char SEPARATOR = '.';
 
     public static String getCommonPrefix() {

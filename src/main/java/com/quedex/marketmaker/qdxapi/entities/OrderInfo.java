@@ -9,25 +9,39 @@ import javax.annotation.concurrent.Immutable;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Immutable
 public class OrderInfo {
 
+    private final String symbol;
     private final long systemOrderId;
     private final Optional<BigDecimal> price;
+    private final OrderSide side;
     private final int quantity;
     private final int initialQuantity;
 
     public OrderInfo(
+            @JsonProperty("symbol") String symbol,
             @JsonProperty("system_order_id") long systemOrderId,
             @JsonProperty("price") BigDecimal price,
+            @JsonProperty("side") OrderSide side,
             @JsonProperty("quantity") int quantity,
             @JsonProperty("initial_quantity") int initialQuantity
     ) {
+        checkArgument(!symbol.isEmpty(), "Empty symbol");
+        this.symbol = symbol;
         this.systemOrderId = systemOrderId;
         this.price = Optional.ofNullable(price);
+        this.side = checkNotNull(side, "null side");
         this.quantity = quantity;
         this.initialQuantity = initialQuantity;
+    }
+
+    public String getSymbol() {
+        return symbol;
     }
 
     public long getSystemOrderId() {
@@ -36,6 +50,10 @@ public class OrderInfo {
 
     public Optional<BigDecimal> getPrice() {
         return price;
+    }
+
+    public OrderSide getSide() {
+        return side;
     }
 
     public int getQuantityLeft() {
@@ -68,8 +86,10 @@ public class OrderInfo {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("symbol", symbol)
                 .add("systemOrderId", systemOrderId)
                 .add("price", price)
+                .add("side", side)
                 .add("quantity", quantity)
                 .add("initialQuantity", initialQuantity)
                 .toString();
