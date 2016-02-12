@@ -1,9 +1,9 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.endpoint.QdxEndpoint;
-import com.quedex.marketmaker.qdxapi.entities.AccountState;
-import com.quedex.marketmaker.qdxapi.entities.InstrumentData;
-import com.quedex.marketmaker.qdxapi.entities.LimitOrderSpec;
+import com.quedex.qdxapi.QdxEndpoint;
+import com.quedex.qdxapi.entities.AccountState;
+import com.quedex.qdxapi.entities.InstrumentData;
+import com.quedex.qdxapi.entities.LimitOrderSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,30 +34,33 @@ public class MarketMakerRunner {
     }
 
     public void runLoop() {
+        try {
+            qdxEndpoint.initialize();
 
-        qdxEndpoint.initialize();
+            MarketMaker marketMaker = new MarketMaker(
+                    new RealTimeProvider(),
+                    marketMakerConfiguration,
+                    getInstrumentData(),
+                    getAccountState()
+            );
 
-        MarketMaker marketMaker = new MarketMaker(
-                new RealTimeProvider(),
-                marketMakerConfiguration,
-                getInstrumentData(),
-                getAccountState()
-        );
+            while (!Thread.currentThread().isInterrupted()) {
 
-        while (!Thread.currentThread().isInterrupted()) {
+                marketMaker.update(getAccountState());
+                marketMaker.update(getInstrumentData());
+                marketMaker.recalculate();
 
-            marketMaker.update(getAccountState());
-            marketMaker.update(getInstrumentData());
-            marketMaker.recalculate();
+                cancelOrders(marketMaker.getOrdersToCancel());
+                placeOrders(marketMaker.getOrdersToPlace());
 
-            cancelOrders(marketMaker.getOrdersToCancel());
-            placeOrders(marketMaker.getOrdersToPlace());
-
-            try {
-                Thread.sleep(sleepTimeSeconds * 1000L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                try {
+                    Thread.sleep(sleepTimeSeconds * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
+        } catch (Throwable t) {
+            LOGGER.error("Terminal error - exiting", t);
         }
     }
 
@@ -84,8 +87,11 @@ public class MarketMakerRunner {
             try {
                 return supplier.call();
             } catch (Exception e) {
+                if (e instanceof RuntimeException) {
+                    ex = new IllegalStateException("Failed after retries: " + maxRetry, e);
+                    break;
+                }
                 LOGGER.warn("Failure when retrying", e);
-                ex = new IllegalStateException("Failed after retries: " + maxRetry, e);
                 retry++;
             }
         }

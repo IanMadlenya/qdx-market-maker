@@ -1,8 +1,8 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.endpoint.QdxEndpoint;
-import com.quedex.marketmaker.qdxapi.endpoint.QdxEndpointProvider;
-import com.quedex.marketmaker.qdxapi.endpoint.QdxEndpointProviderConfigFactory;
+import com.quedex.qdxapi.QdxEndpoint;
+import com.quedex.qdxapi.QdxEndpointProvider;
+import com.quedex.qdxapi.QdxEndpointProviderConfigFactory;
 
 import java.math.BigDecimal;
 
@@ -34,7 +34,6 @@ public class Main {
         });
         Thread.currentThread().setUncaughtExceptionHandler((t, e) -> {
             mm.stop();
-            e.printStackTrace();
         });
 
         mm.runLoop();

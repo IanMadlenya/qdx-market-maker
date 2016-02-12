@@ -1,8 +1,8 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.entities.AccountState;
-import com.quedex.marketmaker.qdxapi.entities.Instrument;
-import com.quedex.marketmaker.qdxapi.entities.OpenPositionInfo;
+import com.quedex.qdxapi.entities.AccountState;
+import com.quedex.qdxapi.entities.Instrument;
+import com.quedex.qdxapi.entities.OpenPositionInfo;
 
 import java.util.HashMap;
 import java.util.Map;

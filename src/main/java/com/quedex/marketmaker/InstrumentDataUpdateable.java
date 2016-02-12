@@ -1,6 +1,6 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.entities.InstrumentData;
+import com.quedex.qdxapi.entities.InstrumentData;
 
 public interface InstrumentDataUpdateable {
 

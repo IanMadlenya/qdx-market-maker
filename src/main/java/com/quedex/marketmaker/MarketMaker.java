@@ -1,6 +1,6 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.entities.*;
+import com.quedex.qdxapi.entities.*;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;

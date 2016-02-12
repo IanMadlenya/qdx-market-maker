@@ -1,6 +1,6 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.entities.AccountState;
+import com.quedex.qdxapi.entities.AccountState;
 
 public interface AccountStateUpdateable {
 

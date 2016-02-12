@@ -1,7 +1,7 @@
 package com.quedex.marketmaker;
 
-import com.quedex.marketmaker.qdxapi.entities.InstrumentData;
-import com.quedex.marketmaker.qdxapi.entities.TradeInfo;
+import com.quedex.qdxapi.entities.InstrumentData;
+import com.quedex.qdxapi.entities.TradeInfo;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
