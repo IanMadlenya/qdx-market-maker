@@ -1,0 +1,39 @@
+com.quedex.marketmaker.qdxapi.quedexBaseUrl = https://quedex.net/
+com.quedex.marketmaker.qdxapi.quedexUserName = <basic auth user name>
+com.quedex.marketmaker.qdxapi.quedexPassword = <basic auth password>
+
+com.quedex.marketmaker.qdxapi.quedexPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-----\n\
+                                                 Version: GnuPG v1\n\
+                                                 \n\
+                                                 mQENBFVodHIBCADFrSKTSaCL38hFCyDbDAvMEX0+JJY1rGIu1EV2V0SEsx90WnZJ\n\
+                                                 Mk8060ya0zAThIuTBx79xyLVOY7aYSCscJF0RI6/tqEL0I4qeluAnGVOkXLvQ6Xr\n\
+                                                 KYta8fkR3nMoTLDAJv3TFtNNyhhCPVgcISUom2Qb/u6kf3+1LAdwZmFeWH+4oiLy\n\
+                                                 VrlIz8eJBk/6cLmlYTlIDnHaWSkjr172ttAFrnIWFzSUL7NhMG/xuol05mLLiMIa\n\
+                                                 Upa+SyhG7u3A7/adBCSG8qGHF8jojItABzfqU5mdCHRWJi2nBBTyDJRHLt6ztLUy\n\
+                                                 C8at+4CumslluNflklHL6Am/3cJC4bnXOHL9ABEBAAG0G1F1ZWRleCA8Y29udGFj\n\
+                                                 dEBxdWVkZXgubmV0PokBOAQTAQIAIgUCVWh0cgIbAwYLCQgHAwIGFQgCCQoLBBYC\n\
+                                                 AwECHgECF4AACgkQ14hiscVQeU/UjggAi4o24Y+29c5csBBGtEJgzWtheBpfejNn\n\
+                                                 k3KaqRT03FefXBA0Qqd1bzo2vJp+cTfsn45kbNsY72tnobuHRsOsZyB/4KOmPwX5\n\
+                                                 U7T1lxI4hYUefXnYo5rHcsYZ1nViwDxClFnByv5/kr6NwmsM8OBb2tNLn0lBtp69\n\
+                                                 V92xPEX8pldRd5NkQGfS5c1CtJR2jIjFyU536TIbqJfN5qgYJIRGyilFe8boiuKA\n\
+                                                 ySvemFI2xmKx/1PCdl/mn7oojI/r0tqpAUfdJi/+Z8p0+x/6bnkuSVxQiNH+p3YS\n\
+                                                 KGLbJWl3ozqaF3ISgYtq4XOTVxZqFnEs9tz/u1EVt0pA2O2twYSOZrkBDQRVaHRy\n\
+                                                 AQgAozvlXCTMU/rWzwcw5usLJbZjYUVuryScJownC2lZwOERBxDKSiQ1LDYvAURj\n\
+                                                 mW3xnmYc0etSu1yrginQR7CMtF+KQ8iIqRHctEbbwamcEFwXFbUQ7DFU3XkvRRQr\n\
+                                                 BvaxY8nabj0vVwWKWH1sOqakC55LM3MJPcL3jo/+22Uvtq1NpC7vLVRUxwxUGyeS\n\
+                                                 vOTHmsjFpf537GMCvdiAz97eywiQk9grPzJLLwAWyr/FX6S7PmKLIMnjLh3IJ3nZ\n\
+                                                 3Qx1ICMOVXOM9Gv0u3PiUstcYCqFKX3KjEoxcvtOfE0xKSWn8pNPYpuzzvjpzWSS\n\
+                                                 nRmS9z+nppSyOgDlE6JK684dwwARAQABiQEfBBgBAgAJBQJVaHRyAhsMAAoJENeI\n\
+                                                 YrHFUHlPzZwH/iKr0FZdH+1hxiqMRHari0W2jkvz4yF2C2nZMLEFCCwKEM5guGd7\n\
+                                                 vsnFEYZpdIZfN8QhTatIUWnuVuXV3prA2LsKk8w7Fdj04ItjXhrwxOtnqgI1Cx9q\n\
+                                                 qFwXcOJQW9ddhJlSzuTLQtcVlwvQRqqYszZA/ZAY23eVYI77ntcc7vo8kzZ3OY0J\n\
+                                                 yphzOfqjWIoQ1xdOZ7nLTV2hOd58mwgMdllrL1q5b+24G/3+86ezudH8WSeacPTo\n\
+                                                 +E5/ucV6nRYCzjgvXOJjkKtMVfHaQjK9kzjdWDs1YvXvXr0tYFyMVF5RE2f9K+OQ\n\
+                                                 8wAV5GbyZGTukBDLJjQu8/Fsiti4BpCW3Hc=\n\
+                                                 =X3tr\n\
+                                                 -----END PGP PUBLIC KEY BLOCK-----
+
+com.quedex.marketmaker.qdxapi.accountId = <account id>
+com.quedex.marketmaker.qdxapi.accountKey = <account private key>
+com.quedex.marketmaker.qdxapi.accountPassword = <account private key password>
+com.quedex.marketmaker.qdxapi.accountNonceGroup = <nonce group>

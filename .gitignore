@@ -6,3 +6,6 @@
 build/
 .gradle/
 out/
+
+# sensitive data
+quedex-config.properties

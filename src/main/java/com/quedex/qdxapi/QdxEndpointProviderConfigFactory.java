@@ -28,12 +28,12 @@ public final class QdxEndpointProviderConfigFactory {
         Configuration configuration = new PropertiesConfiguration(resourceUrl);
         return new QdxEndpointProviderConfiguration(
                 configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_BASE_URL.getKey()),
-                configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_USER_NAME.getKey()),
-                configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_PASSWORD.getKey()),
+                configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_USER_NAME.getKey(), ""),
+                configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_PASSWORD.getKey(), ""),
                 configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_PUBLIC_KEY.getKey()),
                 configuration.getLong(QdxEndPointProviderConfigKey.ACCOUNT_ID.getKey()),
                 configuration.getString(QdxEndPointProviderConfigKey.ACCOUNT_KEY.getKey()),
-                configuration.getString(QdxEndPointProviderConfigKey.ACCOUNT_PASSWORD.getKey()),
+                configuration.getString(QdxEndPointProviderConfigKey.ACCOUNT_PASSWORD.getKey(), ""),
                 configuration.getInt(QdxEndPointProviderConfigKey.ACCOUNT_NONCE_GROUP.getKey(), 0) // defaults to 0
         );
     }

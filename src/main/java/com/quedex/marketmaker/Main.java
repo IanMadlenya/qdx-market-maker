@@ -11,7 +11,7 @@ public class Main {
     public static void main(String... args) {
 
         QdxEndpoint qdxEndPoint = new QdxEndpointProvider(
-                new QdxEndpointProviderConfigFactory("quedex-config-example.properties").getConfiguration()
+                new QdxEndpointProviderConfigFactory("quedex-config.properties").getConfiguration()
         ).getQdxEndPoint();
 
         MarketMakerRunner mm = new MarketMakerRunner(
