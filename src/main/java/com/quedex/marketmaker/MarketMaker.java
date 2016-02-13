@@ -85,7 +85,7 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
             BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getSymbol());
 
             if (!previousFairPrice.containsKey(futures.getSymbol())
-                    || !previousFairPrice.get(futures.getSymbol()).equals(fairPrice)) {
+                    || previousFairPrice.get(futures.getSymbol()).compareTo(fairPrice) != 0) {
 
                 ordersToCancel.addAll(
                         accountState.getPendingOrders().getOrDefault(futures.getSymbol(), PendingOrders.EMPTY)
