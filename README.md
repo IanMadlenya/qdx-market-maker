@@ -1,5 +1,7 @@
 # Running
 
+(requires Java 8; does not require gradle installation - uses gradle wrapper)
+
 0. Clone the repository.
 1. Import the gradle project to your favourite IDE (tested with IntelliJ).
 2. Fetch the dependencies (should happen automatically).
