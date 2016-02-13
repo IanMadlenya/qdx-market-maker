@@ -46,11 +46,11 @@ public class MarketDataManager implements InstrumentDataUpdateable {
             return (book.getBuyLimits().get(0).getPrice().get().add(book.getSellLimits().get(0).getPrice().get()))
                     .divide(TWO, 8, RoundingMode.HALF_EVEN);
 
-        } else if (book.getBuyLimits().isEmpty()) {
+        } else if (!book.getSellLimits().isEmpty()) {
 
             return book.getSellLimits().get(0).getPrice().get();
 
-        } else if (book.getSellLimits().isEmpty()) {
+        } else if (!book.getBuyLimits().isEmpty()) {
 
             return book.getBuyLimits().get(0).getPrice().get();
 
