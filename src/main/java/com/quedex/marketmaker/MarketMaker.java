@@ -33,7 +33,7 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
         RiskManager riskManager = new RiskManager(instrumentManager);
         MarketDataManager marketDataManager = new MarketDataManager();
         orderPlacingStrategy = new UniformFuturesOrderPlacingStrategy(
-                marketDataManager,
+                new LastFairPriceProvider(marketDataManager),
                 riskManager,
                 config.getNumLevels(),
                 config.getQtyOnLevel(),
@@ -50,9 +50,6 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
                 .mapToLong(UserOrderInfo::getClientOrderId)
                 .max()
                 .orElse(0);
-
-        update(instrumentData);
-        update(accountState);
     }
 
     @Override
@@ -71,6 +68,8 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
     }
 
     public void recalculate() {
+
+        // TODO: sensitivity to fair price
 
         ordersToPlace.clear();
 

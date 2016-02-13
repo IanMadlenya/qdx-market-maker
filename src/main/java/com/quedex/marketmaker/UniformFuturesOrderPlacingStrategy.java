@@ -2,6 +2,8 @@ package com.quedex.marketmaker;
 
 import com.quedex.qdxapi.entities.Instrument;
 import com.quedex.qdxapi.entities.OrderSide;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -11,6 +13,8 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UniformFuturesOrderPlacingStrategy.class);
 
     private final FairPriceProvider fairPriceProvider;
     private final RiskManager riskManager;
@@ -46,17 +50,26 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
         List<GenericOrder> orders = new ArrayList<>(levels * 2);
         double totalDelta = riskManager.getTotalDelta();
 
+        BigDecimal bid = null;
+        BigDecimal ask = null;
+
         if (totalDelta < deltaLimit) {
-            orders.addAll(getOrders(futures, OrderSide.BUY, fairPrice, spread.negate()));
+            List<GenericOrder> buys = getOrders(futures, OrderSide.BUY, fairPrice, spread.negate());
+            bid = buys.get(0).getPrice();
+            orders.addAll(buys);
         } // otherwise above limit - don't want to increase delta
         if (totalDelta > -deltaLimit) {
-            orders.addAll(getOrders(futures, OrderSide.SELL, fairPrice, spread));
+            List<GenericOrder> sells = getOrders(futures, OrderSide.SELL, fairPrice, spread);
+            ask = sells.get(0).getPrice();
+            orders.addAll(sells);
         } // otherwise below limit - don't want to decrease delta
+
+        LOGGER.info("Generated orders {}: Bid = {}, Ask = {}", futures.getSymbol(), bid, ask);
 
         return orders;
     }
 
-    private Collection<GenericOrder> getOrders(
+    private List<GenericOrder> getOrders(
             Instrument futures,
             OrderSide side,
             BigDecimal fairPrice,

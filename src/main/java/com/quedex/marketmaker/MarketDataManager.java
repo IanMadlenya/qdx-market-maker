@@ -1,47 +1,63 @@
 package com.quedex.marketmaker;
 
+import com.google.common.collect.ImmutableMap;
+import com.quedex.qdxapi.entities.BuySellBook;
 import com.quedex.qdxapi.entities.InstrumentData;
 import com.quedex.qdxapi.entities.TradeInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MarketDataManager implements FairPriceProvider, InstrumentDataUpdateable {
+import static com.google.common.base.Preconditions.checkArgument;
 
-    private static final int NUM_LAST_PRICES = 2;
+public class MarketDataManager implements InstrumentDataUpdateable {
 
-    private final Map<String, List<TradeInfo>> recordedLastTrades = new HashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(MarketDataManager.class);
+    private static final BigDecimal TWO = BigDecimal.valueOf(2);
+
+    private final Map<String, TradeInfo> lastTrades = new HashMap<>();
+    private Map<String, BuySellBook> orderBook = ImmutableMap.of();
 
     @Override
     public void update(InstrumentData instrumentData) {
-        // we want to have last *recorded* trades
         instrumentData.getTrades().forEach((symbol, trades) -> {
-            List<TradeInfo> saved = recordedLastTrades.getOrDefault(symbol, new ArrayList<>(NUM_LAST_PRICES));
-            if (saved.isEmpty()) {
-                saved.add(getLast(trades));
-            } else {
-                if (!getLast(saved).equals(getLast(trades))) { // new trade arrived
-                    if (saved.size() == NUM_LAST_PRICES) {
-                        saved.remove(0);
-                    }
-                    saved.add(getLast(trades));
-                }
-            }
-            recordedLastTrades.put(symbol, saved);
+            lastTrades.put(symbol, getLast(trades));
         });
+        orderBook = instrumentData.getOrderBook();
+        LOGGER.debug("Updated");
     }
 
     public BigDecimal getLastTradePrice(String symbol) {
-        List<TradeInfo> trades = recordedLastTrades.get(symbol);
-        return getLast(trades).getPrice();
+        checkArgument(lastTrades.containsKey(symbol), "No last trade for %s", symbol);
+        return lastTrades.get(symbol).getPrice();
     }
 
-    @Override
-    public BigDecimal getFairPrice(String symbol) {
-        return getLastTradePrice(symbol);
+    public BigDecimal getMid(String symbol) {
+        BuySellBook book = orderBook.get(symbol);
+        checkArgument(book != null, "No order book for %s", symbol);
+
+        if (!book.getBuyLimits().isEmpty() && !book.getSellLimits().isEmpty()) {
+
+            return (book.getBuyLimits().get(0).getPrice().get().add(book.getSellLimits().get(0).getPrice().get()))
+                    .divide(TWO, 8, RoundingMode.HALF_EVEN);
+
+        } else if (book.getBuyLimits().isEmpty()) {
+
+            return book.getSellLimits().get(0).getPrice().get();
+
+        } else if (book.getSellLimits().isEmpty()) {
+
+            return book.getBuyLimits().get(0).getPrice().get();
+
+        } else {
+
+            return getLastTradePrice(symbol); // use last in case of empty OB
+        }
     }
 
     private static <T> T getLast(List<T> fromList) {

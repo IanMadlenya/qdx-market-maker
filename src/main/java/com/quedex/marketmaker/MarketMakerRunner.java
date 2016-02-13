@@ -1,14 +1,13 @@
 package com.quedex.marketmaker;
 
 import com.quedex.qdxapi.QdxEndpoint;
-import com.quedex.qdxapi.entities.AccountState;
-import com.quedex.qdxapi.entities.InstrumentData;
-import com.quedex.qdxapi.entities.LimitOrderSpec;
+import com.quedex.qdxapi.entities.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -28,13 +27,9 @@ public class MarketMakerRunner {
         this.sleepTimeSeconds = marketMakerConfiguration.getTimeSleepSeconds();
     }
 
-    public void stop() {
-        Thread.currentThread().interrupt();
-        LOGGER.info("Stopping");
-    }
-
     public void runLoop() {
         try {
+            LOGGER.info("Initialising");
             qdxEndpoint.initialize();
 
             MarketMaker marketMaker = new MarketMaker(
@@ -44,6 +39,7 @@ public class MarketMakerRunner {
                     getAccountState()
             );
 
+            LOGGER.info("Running");
             while (!Thread.currentThread().isInterrupted()) {
 
                 marketMaker.update(getAccountState());
@@ -59,17 +55,40 @@ public class MarketMakerRunner {
                     Thread.currentThread().interrupt();
                 }
             }
-        } catch (Throwable t) {
-            LOGGER.error("Terminal error - exiting", t);
+        } catch (Exception e) {
+            LOGGER.error("Terminal error", e);
+        } finally {
+            LOGGER.info("Stopping");
+            try {
+                LOGGER.info("Cancelling all pending orders");
+                cancelOrders(
+                        getAccountState().getPendingOrders().values()
+                                .stream()
+                                .flatMap(PendingOrders::stream)
+                                .map(UserOrderInfo::getClientOrderId)
+                                .collect(Collectors.toList())
+                );
+            } finally {
+                qdxEndpoint.stop();
+                LOGGER.info("Stopped");
+            }
         }
     }
 
     private void cancelOrders(List<Long> idsToBeCancelled) {
+        LOGGER.debug("Cancelling: {}", idsToBeCancelled);
         withRetry(() -> qdxEndpoint.cancelOrders(idsToBeCancelled)); // ignore result
     }
 
     private void placeOrders(List<LimitOrderSpec> ordersToBePlaced) {
-        withRetry(() -> qdxEndpoint.placeOrders(ordersToBePlaced)); // TODO: check result
+        LOGGER.debug("Placing: {}", ordersToBePlaced);
+        List<OrderPlaceResult> results = withRetry(() -> qdxEndpoint.placeOrders(ordersToBePlaced));
+        for (int i = 0; i < results.size(); i++) {
+            if (!results.get(i).isSuccess()) {
+                LOGGER.error("Order: {} failed: {}",
+                        ordersToBePlaced.get(i), results.get(i).getErrorMessage().replaceAll("\\n", " "));
+            }
+        }
     }
 
     private AccountState getAccountState() {
@@ -93,6 +112,11 @@ public class MarketMakerRunner {
                 }
                 LOGGER.warn("Failure when retrying", e);
                 retry++;
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         throw ex;

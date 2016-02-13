@@ -73,6 +73,11 @@ public class QdxEndpoint {
         initialized = true;
     }
 
+    public void stop() {
+        initialized = false;
+        messageSendingExecutor.shutdown();
+    }
+
     private long getNonce() {
         return nonce.incrementAndGet();
     }

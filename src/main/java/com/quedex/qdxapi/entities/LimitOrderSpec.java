@@ -44,4 +44,9 @@ public final class LimitOrderSpec {
     public BigDecimal getLimitPrice() {
         return limitPrice;
     }
+
+    @Override
+    public String toString() {
+        return symbol + ": " + side + " " + quantity + " @ " + limitPrice;
+    }
 }

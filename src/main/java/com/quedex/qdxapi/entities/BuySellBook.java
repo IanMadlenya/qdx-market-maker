@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import javax.annotation.concurrent.Immutable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Immutable
@@ -66,6 +67,22 @@ public final class BuySellBook {
      */
     public ImmutableList<OrderInfo> getBuys() {
         return buys;
+    }
+
+    public ImmutableList<OrderInfo> getBuyLimits() {
+        return ImmutableList.copyOf(
+                buys.stream()
+                        .filter(o -> o.getPrice().isPresent())
+                        .collect(Collectors.toList())
+        );
+    }
+
+    public ImmutableList<OrderInfo> getSellLimits() {
+        return ImmutableList.copyOf(
+                sells.stream()
+                        .filter(o -> o.getPrice().isPresent())
+                        .collect(Collectors.toList())
+        );
     }
 
     /**
