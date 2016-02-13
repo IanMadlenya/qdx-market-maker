@@ -76,11 +76,19 @@ public class MarketMakerRunner {
     }
 
     private void cancelOrders(List<Long> idsToBeCancelled) {
+        if (idsToBeCancelled.isEmpty()) {
+            LOGGER.debug("Nothing to cancel");
+            return;
+        }
         LOGGER.debug("Cancelling: {}", idsToBeCancelled);
         withRetry(() -> qdxEndpoint.cancelOrders(idsToBeCancelled)); // ignore result
     }
 
     private void placeOrders(List<LimitOrderSpec> ordersToBePlaced) {
+        if (ordersToBePlaced.isEmpty()) {
+            LOGGER.debug("Nothing to place");
+            return;
+        }
         LOGGER.debug("Placing: {}", ordersToBePlaced);
         List<OrderPlaceResult> results = withRetry(() -> qdxEndpoint.placeOrders(ordersToBePlaced));
         for (int i = 0; i < results.size(); i++) {

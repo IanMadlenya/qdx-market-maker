@@ -8,8 +8,8 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.concurrent.Immutable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -18,12 +18,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Immutable
 public final class PendingOrders implements Iterable<UserOrderInfo> {
 
+    public static final PendingOrders EMPTY = new PendingOrders(ImmutableList.of(), BigDecimal.ZERO);
+
     private final ImmutableList<UserOrderInfo> orders;
     private final BigDecimal margin;
 
     @JsonCreator
     public PendingOrders(
-            @JsonProperty("orders") ArrayList<UserOrderInfo> orders,
+            @JsonProperty("orders") List<UserOrderInfo> orders,
             @JsonProperty("margin") BigDecimal margin
     ) {
         checkArgument(margin.compareTo(BigDecimal.ZERO) >= 0);
