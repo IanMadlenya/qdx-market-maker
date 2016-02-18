@@ -1,32 +1,37 @@
 package com.quedex.marketmaker;
 
+import com.google.common.io.Resources;
 import com.quedex.qdxapi.QdxEndpoint;
 import com.quedex.qdxapi.QdxEndpointProvider;
 import com.quedex.qdxapi.QdxEndpointProviderConfigFactory;
 
-import java.math.BigDecimal;
-
 public class Main {
     private Main() { throw new AssertionError(); }
 
-    public static void main(String... args) {
+    public static void main(String... args) throws Exception {
+
+        if (args.length != 0 && args.length != 2) {
+            printUsageAndExit();
+        }
+
+        String qdxConfig;
+        String mmConfig;
+
+        if (args.length > 0) {
+            qdxConfig = args[0];
+            mmConfig = args[1];
+        } else {
+            qdxConfig = Resources.getResource("quedex-config.properties").toString();
+            mmConfig = Resources.getResource("market-maker.properties").toString();
+        }
 
         QdxEndpoint qdxEndPoint = new QdxEndpointProvider(
-                new QdxEndpointProviderConfigFactory("quedex-config.properties").getConfiguration()
+                new QdxEndpointProviderConfigFactory(qdxConfig).getConfiguration()
         ).getQdxEndPoint();
 
         MarketMakerRunner mm = new MarketMakerRunner(
                 qdxEndPoint,
-                // TODO: move to a config file
-                new MarketMakerConfiguration(
-                        5,                        // max number of connection retires to QDX
-                        10,                       // sleep time between market maker actions in seconds
-                        new BigDecimal("0.0015"), // (= 0.15%) spread fraction (on a single side!)
-                        new BigDecimal("0.0015"), // (= 0.15%) sensitivity to fair price change TODO: not used yet!
-                        5,                        // number of levels orders are placed on (on a single side!)
-                        50,                       // quantity of order on a single level
-                        250                       // delta limit (number of contracts)
-                )
+                MarketMakerConfiguration.fromPropertiesFile(mmConfig)
         );
 
         Thread runnerThread = Thread.currentThread();
@@ -44,5 +49,10 @@ public class Main {
         });
 
         mm.runLoop();
+    }
+
+    private static void printUsageAndExit() {
+        System.out.println("Usage: java -jar <jar name> <Quedex properties filename> <market maker properties file name>");
+        System.exit(1);
     }
 }

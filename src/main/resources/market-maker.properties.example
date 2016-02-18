@@ -1,0 +1,17 @@
+# max number of connection retires to QDX
+com.quedex.marketmaker.qdxapi.maxConnectionRetry = 5
+# sleep time between market maker actions in seconds
+com.quedex.marketmaker.qdxapi.timeSleepSeconds = 10
+
+# spread fraction (on a single side!) (= 0.15%)
+com.quedex.marketmaker.qdxapi.spreadFraction = 0.0015
+# sensitivity to fair price change (= 0.15%) TODO: not used yet!
+com.quedex.marketmaker.qdxapi.fairPriceSensitivityFraction = 0.0015
+# number of levels orders are placed on (on a single side!)
+com.quedex.marketmaker.qdxapi.numLevels = 5
+# quantity of an order on a single level
+com.quedex.marketmaker.qdxapi.quantityOnLevel = 50
+# delta limit (number of contracts)
+com.quedex.marketmaker.qdxapi.deltaLimit = 250
+
+

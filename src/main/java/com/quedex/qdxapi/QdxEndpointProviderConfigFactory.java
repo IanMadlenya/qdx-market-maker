@@ -1,11 +1,8 @@
 package com.quedex.qdxapi;
 
 import com.google.common.base.Strings;
-import com.google.common.io.Resources;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
-
-import java.net.URL;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -23,9 +20,8 @@ public final class QdxEndpointProviderConfigFactory {
         }
     }
 
-    private QdxEndpointProviderConfiguration createConfiguration(String resourceName) throws Exception {
-        URL resourceUrl = Resources.getResource(resourceName);
-        Configuration configuration = new PropertiesConfiguration(resourceUrl);
+    private QdxEndpointProviderConfiguration createConfiguration(String fileName) throws Exception {
+        Configuration configuration = new PropertiesConfiguration(fileName);
         return new QdxEndpointProviderConfiguration(
                 configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_BASE_URL.getKey()),
                 configuration.getString(QdxEndPointProviderConfigKey.QUEDEX_USER_NAME.getKey(), ""),

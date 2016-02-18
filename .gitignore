@@ -8,4 +8,4 @@ build/
 out/
 
 # sensitive data
-quedex-config.properties
+*.properties
