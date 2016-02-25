@@ -1,8 +1,8 @@
-com.quedex.marketmaker.qdxapi.quedexBaseUrl = https://quedex.net/
-com.quedex.marketmaker.qdxapi.quedexUserName = <basic auth user name>
-com.quedex.marketmaker.qdxapi.quedexPassword = <basic auth password>
+net.quedex.marketmaker.qdxapi.quedexBaseUrl = https://quedex.net/
+net.quedex.marketmaker.qdxapi.quedexUserName = <basic auth user name>
+net.quedex.marketmaker.qdxapi.quedexPassword = <basic auth password>
 
-com.quedex.marketmaker.qdxapi.quedexPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-----\n\
+net.quedex.marketmaker.qdxapi.quedexPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-----\n\
                                                  Version: GnuPG v1\n\
                                                  \n\
                                                  mQENBFVodHIBCADFrSKTSaCL38hFCyDbDAvMEX0+JJY1rGIu1EV2V0SEsx90WnZJ\n\
@@ -33,7 +33,7 @@ com.quedex.marketmaker.qdxapi.quedexPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-
                                                  =X3tr\n\
                                                  -----END PGP PUBLIC KEY BLOCK-----
 
-com.quedex.marketmaker.qdxapi.accountId = <account id>
-com.quedex.marketmaker.qdxapi.accountKey = <account private key>
-com.quedex.marketmaker.qdxapi.accountPassword = <account private key password>
-com.quedex.marketmaker.qdxapi.accountNonceGroup = <nonce group>
+net.quedex.marketmaker.qdxapi.accountId = <account id>
+net.quedex.marketmaker.qdxapi.accountKey = <account private key>
+net.quedex.marketmaker.qdxapi.accountPassword = <account private key password>
+net.quedex.marketmaker.qdxapi.accountNonceGroup = <nonce group>

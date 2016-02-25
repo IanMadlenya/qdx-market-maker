@@ -161,7 +161,7 @@ public class MarketMakerConfiguration {
         VEGA_LIMIT("vegaLimit"),
         DELTA_LIMIT("deltaLimit");
 
-        private static final String COMMON_PREFIX = "com.quedex.marketmaker.qdxapi";
+        private static final String COMMON_PREFIX = "net.quedex.marketmaker.qdxapi";
         private static final char SEPARATOR = '.';
 
         public static String getCommonPrefix() {

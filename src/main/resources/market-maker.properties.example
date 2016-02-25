@@ -1,33 +1,33 @@
 # max number of connection retires to QDX
-com.quedex.marketmaker.qdxapi.maxConnectionRetry = 5
+net.quedex.marketmaker.qdxapi.maxConnectionRetry = 5
 # sleep time between market maker actions in seconds
-com.quedex.marketmaker.qdxapi.timeSleepSeconds = 10
+net.quedex.marketmaker.qdxapi.timeSleepSeconds = 10
 
 # futures spread fraction (on a single side!) (= 0.15%)
-com.quedex.marketmaker.qdxapi.futuresSpreadFraction = 0.0015
+net.quedex.marketmaker.qdxapi.futuresSpreadFraction = 0.0015
 # sensitivity to fair price change (= 0.15%) TODO: not used yet!
-com.quedex.marketmaker.qdxapi.fairPriceSensitivityFraction = 0.0015
+net.quedex.marketmaker.qdxapi.fairPriceSensitivityFraction = 0.0015
 
 # mid volatility used for options (= 50%)
-com.quedex.marketmaker.qdxapi.fairVolatility = 0.5
+net.quedex.marketmaker.qdxapi.fairVolatility = 0.5
 # options spread fraction on volatility (on a single side!) (= 0.15%)
-com.quedex.marketmaker.qdxapi.volatilitySpreadFraction = 0.0015
+net.quedex.marketmaker.qdxapi.volatilitySpreadFraction = 0.0015
 # SABR beta parameter
-com.quedex.marketmaker.qdxapi.sabr.beta = 1
+net.quedex.marketmaker.qdxapi.sabr.beta = 1
 # SABR volOfVol (aka alpha) parameter
-com.quedex.marketmaker.qdxapi.sabr.volOfVol = 1
+net.quedex.marketmaker.qdxapi.sabr.volOfVol = 1
 # SABR rho parameter
-com.quedex.marketmaker.qdxapi.sabr.rho = 0
+net.quedex.marketmaker.qdxapi.sabr.rho = 0
 # SABR whether the volOfVol should be multiplied by sqrt(1 / timeToMaturity)
-com.quedex.marketmaker.qdxapi.sabr.useTimeAdjustedVolOfVol = true
+net.quedex.marketmaker.qdxapi.sabr.useTimeAdjustedVolOfVol = true
 
 
 # number of levels orders are placed on (on a single side!)
-com.quedex.marketmaker.qdxapi.numLevels = 5
+net.quedex.marketmaker.qdxapi.numLevels = 5
 # quantity of an order on a single level
-com.quedex.marketmaker.qdxapi.quantityOnLevel = 50
+net.quedex.marketmaker.qdxapi.quantityOnLevel = 50
 
 # delta limit (delta per contract)
-com.quedex.marketmaker.qdxapi.deltaLimit = 100
+net.quedex.marketmaker.qdxapi.deltaLimit = 100
 # vega limit (vega per notional)
-com.quedex.marketmaker.qdxapi.vegaLimit = 50
+net.quedex.marketmaker.qdxapi.vegaLimit = 50

@@ -108,11 +108,12 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
             ask = addOrders(orders, option, OrderSide.SELL, fairVola, volaSpread, fairFuturesPrice);
         }
 
+        LOGGER.info("Generated orders {}: Bid = {}, Ask = {}", option.getSymbol(), bid, ask);
+
         if (bid != null && ask != null) {
             checkState(bid.compareTo(ask) < 0, "bid=%s >= %s=ask", bid, ask);
         }
 
-        LOGGER.info("Generated orders {}: Bid = {}, Ask = {}", option.getSymbol(), bid, ask);
         return orders;
     }
 

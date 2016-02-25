@@ -18,7 +18,7 @@
 2. Fetch the dependencies (should happen automatically).
 3. Rename the file `quedex-config.properties.example` in `qdx-market-maker/src/main/resources` to 
 `quedex-config.properties` and fill in your details.
-3. Rename the file `market-maker.properties.example` in `qdx-market-maker/src/main/resources` to 
+4. Rename the file `market-maker.properties.example` in `qdx-market-maker/src/main/resources` to
 `market-maker.properties` and change the configuration according to your liking.
 5. Run the `Main` class.
 
@@ -29,7 +29,7 @@ The market making bot:
 * has configurable spread
 * follows a predefined Fair Price for futures (currently last price or mid - change the implementation in the 
 `MarketMaker` class between `LastFairPriceProvider` and `MidFairPriceProvider`)
-* places option orders with volatility smile adjustments based on the SABR model
+* places option orders with volatility smile adjustments based on the SABR model with time-dependent volatility of volatility
 * has configurable risk management - stops quoting one side of the order book when delta or vega limit exceeded
 * enables risk monitoring based on greeks (delta, vega, gamma, theta), per position and in total
 * cancels all orders when going down or on error
