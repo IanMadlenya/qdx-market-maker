@@ -5,6 +5,9 @@ import net.quedex.api.entities.OrderSide;
 
 import java.math.BigDecimal;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class GenericOrder {
 
     private final String symbol;
@@ -14,8 +17,11 @@ public class GenericOrder {
     private final int initialQuantity;
 
     public GenericOrder(String symbol, OrderSide side, BigDecimal price, int initialQuantity) {
+        checkArgument(!symbol.isEmpty(), "Empty symbol");
+        checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <= 0", price);
+        checkArgument(initialQuantity > 0, "initialQuantity=%s <= 0", initialQuantity);
         this.symbol = symbol;
-        this.side = side;
+        this.side = checkNotNull(side, "null side");
         this.price = price;
         this.quantity = initialQuantity;
         this.initialQuantity = initialQuantity;

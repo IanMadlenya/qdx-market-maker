@@ -27,6 +27,7 @@ dependencies {
     compile 'org.bouncycastle:bcpg-jdk15on:1.54'
     compile 'com.google.code.findbugs:jsr305:3.0.0'
     compile 'commons-configuration:commons-configuration:1.10'
+    compile 'org.apache.commons:commons-math3:3.6'
 }
 
 wrapper {

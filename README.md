@@ -27,15 +27,16 @@
 The market making bot:
 * places orders with configurable quantities on configurable number of levels
 * has configurable spread
-* follows a predefined Fair Price (currently last price or mid - change the implementation in the `MarketMaker` class 
-between `LastFairPriceProvider` and `MidFairPriceProvider`)
-* has configurable risk management - stops quoting one side of the order book when delta limit exceeded
+* follows a predefined Fair Price for futures (currently last price or mid - change the implementation in the 
+`MarketMaker` class between `LastFairPriceProvider` and `MidFairPriceProvider`)
+* places option orders with volatility smile adjustments based on the SABR model
+* has configurable risk management - stops quoting one side of the order book when delta or vega limit exceeded
+* enables risk monitoring based on greeks (delta, vega, gamma, theta), per position and in total
 * cancels all orders when going down or on error
 * is easily extensible
 
 TODO:
 * sensitivity to Fair Price changes
-* options market making
 * logging configuration
 * documentation
 * websockets API

@@ -42,8 +42,8 @@ public class MarketMakerRunner {
             LOGGER.info("Running");
             while (!Thread.currentThread().isInterrupted()) {
 
-                marketMaker.update(getAccountState());
                 marketMaker.update(getInstrumentData());
+                marketMaker.update(getAccountState());
                 marketMaker.recalculate();
 
                 cancelOrders(marketMaker.getOrdersToCancel());

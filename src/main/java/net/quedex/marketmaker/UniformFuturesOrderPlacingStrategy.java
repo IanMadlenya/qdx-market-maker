@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy {
 
@@ -32,8 +33,12 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
             double deltaLimit,
             BigDecimal spreadFraction
     ) {
-        this.fairPriceProvider = fairPriceProvider;
-        this.riskManager = riskManager;
+        checkArgument(levels >= 0, "numLevels=%s < 0", levels);
+        checkArgument(qtyOnLevel > 0, "qtyOnLevel=%s <= 0", qtyOnLevel);
+        checkArgument(deltaLimit >= 0, "deltaLimit=%s < 0", deltaLimit);
+        checkArgument(spreadFraction.compareTo(BigDecimal.ZERO) > 0, "spreadFraction=%s <= 0", spreadFraction);
+        this.fairPriceProvider = checkNotNull(fairPriceProvider, "null fairPriceProvider");
+        this.riskManager = checkNotNull(riskManager, "null riskManager");
         this.levels = levels;
         this.qtyOnLevel = qtyOnLevel;
         this.deltaLimit = deltaLimit;

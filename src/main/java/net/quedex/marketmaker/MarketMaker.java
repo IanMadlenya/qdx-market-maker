@@ -17,15 +17,19 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
     private final InstrumentDataUpdateable[] instrumentDataUpdateables;
 
     private final InstrumentManager instrumentManager;
-    private final OrderPlacingStrategy orderPlacingStrategy;
-    private final FairPriceProvider fairPriceProvider;
+    private final OrderPlacingStrategy futuresOrderPalcingStrategy;
+    private final OrderPlacingStrategy optionOrderPlacingStrategy;
+    private final FairPriceProvider futuresFairPriceProvider;
 
     private final List<Long> ordersToCancel = new ArrayList<>();
     private final List<LimitOrderSpec> ordersToPlace = new ArrayList<>();
     private final List<OrderModificationSpec> ordersToModify = new ArrayList<>();
     private final Map<String, BigDecimal> previousFairPrice = new HashMap<>();
-    private long orderIdCounter = 0;
 
+    private final int numLevels;
+    private final int qtyOnLevel;
+
+    private long orderIdCounter = 0;
     private AccountState accountState;
 
     public MarketMaker(
@@ -35,16 +39,41 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
             AccountState accountState
     ) {
         instrumentManager = new InstrumentManager(timeProvider, instrumentData.getInstrumentInfo());
-        RiskManager riskManager = new RiskManager(instrumentManager);
         MarketDataManager marketDataManager = new MarketDataManager();
-        fairPriceProvider = new LastFairPriceProvider(marketDataManager);
-        orderPlacingStrategy = new UniformFuturesOrderPlacingStrategy(
-                fairPriceProvider,
+        futuresFairPriceProvider = new LastFairPriceProvider(marketDataManager);
+        FairPriceProvider fairVolatilityProvider = s -> BigDecimal.valueOf(config.getFairVolatility());
+        Pricing pricing = new Pricing(
+                timeProvider,
+                config.getSabrBeta(),
+                config.getSabrVolOfVol(),
+                config.getSabrRho(),
+                config.useSabrTimeAdjustedVolOfVol()
+        );
+        RiskManager riskManager = new RiskManager(
+                instrumentManager,
+                fairVolatilityProvider,
+                futuresFairPriceProvider,
+                pricing
+        );
+        futuresOrderPalcingStrategy = new UniformFuturesOrderPlacingStrategy(
+                futuresFairPriceProvider,
                 riskManager,
                 config.getNumLevels(),
                 config.getQtyOnLevel(),
                 config.getDeltaLimit(),
-                config.getSpreadFraction()
+                config.getFuturesSpreadFraction()
+        );
+        optionOrderPlacingStrategy = new UniformOptionOrderPlacingStrategy(
+                fairVolatilityProvider,
+                futuresFairPriceProvider,
+                riskManager,
+                instrumentManager,
+                pricing,
+                config.getNumLevels(),
+                config.getQtyOnLevel(),
+                config.getDeltaLimit(),
+                config.getVegaLimit(),
+                config.getVolatilitySpreadFraction()
         );
 
         accountStateUpdateables = new AccountStateUpdateable[]{ riskManager };
@@ -56,6 +85,8 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
                 .mapToLong(UserOrderInfo::getClientOrderId)
                 .max()
                 .orElse(0);
+        numLevels = config.getNumLevels();
+        qtyOnLevel = config.getQtyOnLevel();
     }
 
     @Override
@@ -82,7 +113,7 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
 
         for (final Instrument futures : instrumentManager.getTradedFutures()) {
 
-            BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getSymbol());
+            BigDecimal fairPrice = futuresFairPriceProvider.getFairPrice(futures.getSymbol());
 
             if (!previousFairPrice.containsKey(futures.getSymbol())
                     || previousFairPrice.get(futures.getSymbol()).compareTo(fairPrice) != 0) {
@@ -95,12 +126,36 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
                 );
 
                 ordersToPlace.addAll(
-                        orderPlacingStrategy.getOrders(futures).stream()
+                        futuresOrderPalcingStrategy.getOrders(futures).stream()
                                 .map(o -> o.toLimitOrderSpec(++orderIdCounter))
                                 .collect(Collectors.toList())
                 );
 
                 previousFairPrice.put(futures.getSymbol(), fairPrice);
+            }
+        }
+
+        for (final Instrument option : instrumentManager.getTradedOptions()) {
+
+            int sumPlacedOrderQty = accountState.getPendingOrders().getOrDefault(option.getSymbol(), PendingOrders.EMPTY)
+                    .stream()
+                    .mapToInt(UserOrderInfo::getQuantityLeft)
+                    .sum();
+
+            if (sumPlacedOrderQty < numLevels * qtyOnLevel * 2) { // any filled
+
+                ordersToCancel.addAll(
+                        accountState.getPendingOrders().getOrDefault(option.getSymbol(), PendingOrders.EMPTY)
+                                .stream()
+                                .map(UserOrderInfo::getClientOrderId)
+                                .collect(Collectors.toList())
+                );
+
+                ordersToPlace.addAll(
+                        optionOrderPlacingStrategy.getOrders(option).stream()
+                                .map(o -> o.toLimitOrderSpec(++orderIdCounter))
+                                .collect(Collectors.toList())
+                );
             }
         }
     }
