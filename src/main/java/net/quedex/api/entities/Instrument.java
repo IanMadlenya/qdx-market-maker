@@ -7,6 +7,7 @@ import com.google.common.base.MoreObjects;
 
 import javax.annotation.concurrent.Immutable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -192,15 +193,29 @@ public final class Instrument {
     }
 
     /**
-     * @return price rounded down to tick size or tick size if it would be negative
+     * @param price price to be rounded, has to be positive
+     * @param roundingMode rounding mode that should be used (only {@link RoundingMode#UP} and {@link RoundingMode#DOWN}
+     *                     are supported)
+     * @return price rounded to tick size
+     * @throws IllegalArgumentException if {@code roundingMode} is neither {@link RoundingMode#UP} nor
+     *                                  {@link RoundingMode#DOWN} or {@code price} is not positive
      */
-    public BigDecimal roundPriceToTickSide(BigDecimal price) {
+    public BigDecimal roundPriceToTickSize(BigDecimal price, RoundingMode roundingMode) {
+        checkArgument(roundingMode == RoundingMode.UP || roundingMode == RoundingMode.DOWN,
+                "Only rounding UP or DOWN supported");
+        checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <=0", price);
+
         BigDecimal remainder = price.remainder(tickSize);
-        BigDecimal result = price.subtract(remainder);
-        if (remainder.compareTo(BigDecimal.ZERO) < 0) {
-            return tickSize;
+        if (remainder.compareTo(BigDecimal.ZERO) == 0) {
+            return price;
         }
-        return result;
+
+        BigDecimal result = price.subtract(remainder);
+        if (roundingMode == RoundingMode.UP) {
+            return result.add(tickSize);
+        } else {
+            return result;
+        }
     }
 
     @Override

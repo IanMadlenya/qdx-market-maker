@@ -60,6 +60,10 @@ public class MarketMakerConfiguration {
         checkArgument(qtyOnLevel > 0, "qtyOnLevel=%s <= 0", qtyOnLevel);
         checkArgument(deltaLimit >= 0, "deltaLimit=%s < 0", deltaLimit);
         checkArgument(vegaLimit >= 0, "vegaLimit=%s < 0", vegaLimit);
+
+        checkArgument(fairVolatility - numLevels * fairVolatility * volatilitySpreadFraction > 0,
+                "Nonpositive lowest level volatility");
+
         this.maxConnectionRetry = maxConnectionRetry;
         this.timeSleepSeconds = timeSleepSeconds;
         this.futuresSpreadFraction = futuresSpreadFraction;

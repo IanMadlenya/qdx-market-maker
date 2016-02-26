@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -129,8 +130,9 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
 
         for (int i = 1; i <= levels; i++) {
 
-            BigDecimal priceRounded = option.roundPriceToTickSide(
-                    BigDecimal.valueOf(pricing.calculateMetrics(option, fairVola + i * spread, futuresPrice).getPrice())
+            BigDecimal priceRounded = option.roundPriceToTickSize(
+                    BigDecimal.valueOf(pricing.calculateMetrics(option, fairVola + i * spread, futuresPrice).getPrice()),
+                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP
             );
 
             if (best == null) {

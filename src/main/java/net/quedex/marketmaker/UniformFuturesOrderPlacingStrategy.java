@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -84,8 +85,9 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
 
         for (int i = 1; i <= levels; i++) {
 
-            BigDecimal priceRounded = futures.roundPriceToTickSide(
-                    fairPrice.add(spread.multiply(BigDecimal.valueOf(i)))
+            BigDecimal priceRounded = futures.roundPriceToTickSize(
+                    fairPrice.add(spread.multiply(BigDecimal.valueOf(i))),
+                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP
             );
 
             orders.add(new GenericOrder(

@@ -114,8 +114,8 @@ public class MarketMakerRunner {
             try {
                 return supplier.call();
             } catch (Exception e) {
+                ex = new IllegalStateException("Failed after retries: " + maxRetry, e);
                 if (e instanceof RuntimeException) {
-                    ex = new IllegalStateException("Failed after retries: " + maxRetry, e);
                     break;
                 }
                 LOGGER.warn("Failure when retrying", e);
