@@ -65,6 +65,8 @@ public class QdxEndpoint {
 
             JsonNode node = MAPPER.readTree(qdxCryptService.decrypt(encryptedResponse));
 
+            checkState(!node.get("has_error").booleanValue(), node.get("error_message").textValue());
+
             nonce.set(node.get("content").get("last_nonce").asLong());
         } catch (CryptServiceException | IOException e) {
             throw new IllegalStateException("Error initializing", e);

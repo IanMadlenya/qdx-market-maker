@@ -135,6 +135,14 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
                     side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP
             );
 
+            if (priceRounded.compareTo(BigDecimal.ZERO) == 0) {
+                if (side == OrderSide.BUY) {
+                    continue;
+                } else {
+                    priceRounded = option.getTickSize();
+                }
+            }
+
             if (best == null) {
                 best = priceRounded;
             }
