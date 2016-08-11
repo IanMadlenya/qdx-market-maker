@@ -38,4 +38,7 @@ shadowJar {
     manifest {
         attributes 'Main-Class': 'net.quedex.marketmaker.Main'
     }
+
+    exclude 'market-maker.properties'
+    exclude 'quedex-config.properties'
 }

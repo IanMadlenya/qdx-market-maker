@@ -1,8 +1,7 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.Instrument;
-import net.quedex.api.entities.InstrumentType;
-import net.quedex.api.entities.OrderSide;
+import net.quedex.api.market.Instrument;
+import net.quedex.api.user.OrderSide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.*;
+import static net.quedex.marketmaker.UniformFuturesOrderPlacingStrategy.roundPriceToTickSize;
 
 public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
 
@@ -63,10 +63,10 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
     public Collection<GenericOrder> getOrders(Instrument option) {
         checkArgument(!option.isFutures(), "Expected option");
 
-        double fairVola = fairVolatilityProvider.getFairPrice(option.getSymbol()).doubleValue();
+        double fairVola = fairVolatilityProvider.getFairPrice(option.getInstrumentId()).doubleValue();
         double volaSpread = volaSpreadFraction * fairVola;
         double fairFuturesPrice = futuresFairPriceProvider.getFairPrice(
-                instrumentManager.getFuturesAtExpiration(option.getExpirationDate()).getSymbol()
+                instrumentManager.getFuturesAtExpiration(option.getExpirationDate()).getInstrumentId()
         ).doubleValue();
 
         List<GenericOrder> orders = new ArrayList<>(levels * 2);
@@ -76,7 +76,7 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
         boolean placeBuys = true;
         boolean placeSells = true;
 
-        if (option.getInstrumentType() == InstrumentType.OPTION_EUROPEAN_CALL) {
+        if (option.getOptionType().get() == Instrument.OptionType.CALL_EUROPEAN) {
 
             if (totalDelta >= deltaLimit) {
                 placeBuys = false;
@@ -130,9 +130,10 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
 
         for (int i = 1; i <= levels; i++) {
 
-            BigDecimal priceRounded = option.roundPriceToTickSize(
+            BigDecimal priceRounded = roundPriceToTickSize(
                     BigDecimal.valueOf(pricing.calculateMetrics(option, fairVola + i * spread, futuresPrice).getPrice()),
-                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP
+                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
+                    option.getTickSize()
             );
 
             if (priceRounded.compareTo(BigDecimal.ZERO) == 0) {
@@ -148,7 +149,7 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
             }
 
             orders.add(new GenericOrder(
-                    option.getSymbol(),
+                    option.getInstrumentId(),
                     side,
                     priceRounded,
                     qtyOnLevel

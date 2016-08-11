@@ -1,42 +1,59 @@
 package net.quedex.marketmaker;
 
+import net.quedex.api.market.Instrument;
+import net.quedex.api.market.Quotes;
+import net.quedex.api.market.QuotesListener;
+import net.quedex.api.user.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.concurrent.NotThreadSafe;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-@NotThreadSafe
-public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdateable {
+import static com.google.common.base.Preconditions.checkNotNull;
 
-    private final AccountStateUpdateable[] accountStateUpdateables;
-    private final InstrumentDataUpdateable[] instrumentDataUpdateables;
+@NotThreadSafe
+public class MarketMaker implements QuotesListener, OrderListener, OpenPositionListener {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MarketMaker.class);
+
+    private final QuotesListener[] quotesListeners;
+    private final OrderListener[] orderListeners;
+    private final OpenPositionListener[] openPositionListeners;
+
+    /**
+     * Thread confinement to this thread guarantees thread-safety of the whole application.
+     */
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Consumer<Exception> exceptionHandler;
 
     private final InstrumentManager instrumentManager;
     private final OrderPlacingStrategy futuresOrderPalcingStrategy;
     private final OrderPlacingStrategy optionOrderPlacingStrategy;
     private final FairPriceProvider futuresFairPriceProvider;
+    private final OrderManager orderManager;
 
-    private final List<Long> ordersToCancel = new ArrayList<>();
-    private final List<LimitOrderSpec> ordersToPlace = new ArrayList<>();
-    private final List<OrderModificationSpec> ordersToModify = new ArrayList<>();
-    private final Map<String, BigDecimal> previousFairPrice = new HashMap<>();
+    private final Map<Integer, BigDecimal> previousFairPrice = new HashMap<>();
 
     private final int numLevels;
     private final int qtyOnLevel;
 
-    private long orderIdCounter = 0;
-    private AccountState accountState;
-
     public MarketMaker(
             TimeProvider timeProvider,
             MarketMakerConfiguration config,
-            InstrumentData instrumentData,
-            AccountState accountState
+            Map<Integer, Instrument> instrumentData,
+            Consumer<Exception> exceptionHandler
     ) {
-        instrumentManager = new InstrumentManager(timeProvider, instrumentData.getInstrumentInfo());
+        instrumentManager = new InstrumentManager(timeProvider, instrumentData);
         MarketDataManager marketDataManager = new MarketDataManager();
         futuresFairPriceProvider = new LastFairPriceProvider(marketDataManager);
         FairPriceProvider fairVolatilityProvider = s -> BigDecimal.valueOf(config.getFairVolatility());
@@ -73,101 +90,161 @@ public class MarketMaker implements AccountStateUpdateable, InstrumentDataUpdate
                 config.getVegaLimit(),
                 config.getVolatilitySpreadFraction()
         );
+        orderManager = new OrderManager();
 
-        accountStateUpdateables = new AccountStateUpdateable[]{ riskManager };
-        instrumentDataUpdateables = new InstrumentDataUpdateable[]{ marketDataManager };
+        quotesListeners = new QuotesListener[]{ marketDataManager };
+        orderListeners = new OrderListener[]{ orderManager };
+        openPositionListeners = new OpenPositionListener[]{ riskManager };
 
-        orderIdCounter = accountState.getPendingOrders().values()
-                .stream()
-                .flatMap(PendingOrders::stream)
-                .mapToLong(UserOrderInfo::getClientOrderId)
-                .max()
-                .orElse(0);
         numLevels = config.getNumLevels();
         qtyOnLevel = config.getQtyOnLevel();
+        this.exceptionHandler = checkNotNull(exceptionHandler, "null exceptionHandler");
     }
 
-    @Override
-    public void update(AccountState accountState) {
-        for (final AccountStateUpdateable accountStateUpdateable : accountStateUpdateables) {
-            accountStateUpdateable.update(accountState);
-        }
-        this.accountState = accountState;
+    public Future<List<OrderSpec>> recalculate() {
+        return executor.submit(this::recalculateNoSync);
     }
 
-    @Override
-    public void update(InstrumentData instrumentData) {
-        for (final InstrumentDataUpdateable instrumentDataUpdateable : instrumentDataUpdateables) {
-            instrumentDataUpdateable.update(instrumentData);
-        }
+    public Future<List<OrderSpec>> getAllOrderCancels() {
+        return executor.submit(
+                () -> orderManager.getAllOrderIds().stream().map(OrderCancelSpec::new).collect(Collectors.toList())
+        );
     }
 
-    public void recalculate() {
+    public void stop() {
+        executor.shutdown();
+    }
+
+    private List<OrderSpec> recalculateNoSync() {
 
         // TODO: sensitivity to fair price
 
-        ordersToPlace.clear();
-        ordersToCancel.clear();
+        try {
+            List<OrderSpec> orderSpecs = new ArrayList<>();
 
-        for (final Instrument futures : instrumentManager.getTradedFutures()) {
+            for (final Instrument futures : instrumentManager.getTradedFutures()) {
 
-            BigDecimal fairPrice = futuresFairPriceProvider.getFairPrice(futures.getSymbol());
+                int instrId = futures.getInstrumentId();
+                BigDecimal fairPrice = futuresFairPriceProvider.getFairPrice(instrId);
 
-            if (!previousFairPrice.containsKey(futures.getSymbol())
-                    || previousFairPrice.get(futures.getSymbol()).compareTo(fairPrice) != 0) {
+                if (!previousFairPrice.containsKey(instrId) || previousFairPrice.get(instrId).compareTo(fairPrice) != 0) {
 
-                ordersToCancel.addAll(
-                        accountState.getPendingOrders().getOrDefault(futures.getSymbol(), PendingOrders.EMPTY)
-                                .stream()
-                                .map(UserOrderInfo::getClientOrderId)
-                                .collect(Collectors.toList())
-                );
+                    orderSpecs.addAll(
+                            orderManager.getOrderIdsForInstrument(instrId)
+                                    .stream()
+                                    .map(OrderCancelSpec::new)
+                                    .collect(Collectors.toList())
+                    );
 
-                ordersToPlace.addAll(
-                        futuresOrderPalcingStrategy.getOrders(futures).stream()
-                                .map(o -> o.toLimitOrderSpec(++orderIdCounter))
-                                .collect(Collectors.toList())
-                );
+                    orderSpecs.addAll(
+                            futuresOrderPalcingStrategy.getOrders(futures).stream()
+                                    .map(o -> o.toLimitOrderSpec(orderManager.getNextOrderId()))
+                                    .collect(Collectors.toList())
+                    );
 
-                previousFairPrice.put(futures.getSymbol(), fairPrice);
+                    previousFairPrice.put(instrId, fairPrice);
+                }
             }
-        }
 
-        for (final Instrument option : instrumentManager.getTradedOptions()) {
+            for (final Instrument option : instrumentManager.getTradedOptions()) {
 
-            int sumPlacedOrderQty = accountState.getPendingOrders().getOrDefault(option.getSymbol(), PendingOrders.EMPTY)
-                    .stream()
-                    .mapToInt(UserOrderInfo::getQuantityLeft)
-                    .sum();
+                // TODO: replace orders also on fair price change
 
-            if (sumPlacedOrderQty < numLevels * qtyOnLevel * 2) { // any filled
+                int instrId = option.getInstrumentId();
+                int sumPlacedOrderQty = orderManager.getSumPlacedQtyForInstrument(instrId);
 
-                ordersToCancel.addAll(
-                        accountState.getPendingOrders().getOrDefault(option.getSymbol(), PendingOrders.EMPTY)
-                                .stream()
-                                .map(UserOrderInfo::getClientOrderId)
-                                .collect(Collectors.toList())
-                );
+                if (sumPlacedOrderQty < numLevels * qtyOnLevel * 2) { // any filled
 
-                ordersToPlace.addAll(
-                        optionOrderPlacingStrategy.getOrders(option).stream()
-                                .map(o -> o.toLimitOrderSpec(++orderIdCounter))
-                                .collect(Collectors.toList())
-                );
+                    orderSpecs.addAll(
+                            orderManager.getOrderIdsForInstrument(instrId)
+                                    .stream()
+                                    .map(OrderCancelSpec::new)
+                                    .collect(Collectors.toList())
+                    );
+
+                    orderSpecs.addAll(
+                            optionOrderPlacingStrategy.getOrders(option).stream()
+                                    .map(o -> o.toLimitOrderSpec(orderManager.getNextOrderId()))
+                                    .collect(Collectors.toList())
+                    );
+                }
             }
+            return orderSpecs;
+        } catch (RuntimeException e) {
+            exceptionHandler.accept(e);
+            throw e;
         }
     }
 
-
-    public List<Long> getOrdersToCancel() {
-        return ordersToCancel;
+    @Override
+    public void onQuotes(Quotes quotes) {
+        catchingExecute(() -> {
+            for (final QuotesListener quotesListener : quotesListeners) {
+                quotesListener.onQuotes(quotes);
+            }
+        });
     }
 
-    public List<LimitOrderSpec> getOrdersToPlace() {
-        return ordersToPlace;
+    @Override
+    public void onOpenPosition(OpenPosition openPosition) {
+        catchingExecute(() -> {
+            for (final OpenPositionListener openPositionListener : openPositionListeners) {
+                openPositionListener.onOpenPosition(openPosition);
+            }
+        });
     }
 
-    public List<OrderModificationSpec> getOrdersToModify() {
-        return ordersToModify;
+    @Override
+    public void onOrderPlaced(OrderPlaced orderPlaced) {
+        catchingExecute(() -> {
+            for (final OrderListener orderListener : orderListeners) {
+                orderListener.onOrderPlaced(orderPlaced);
+            }
+        });
+    }
+
+    @Override
+    public void onOrderPlaceFailed(OrderPlaceFailed orderPlaceFailed) {
+        LOGGER.error("{}", orderPlaceFailed);
+    }
+
+    @Override
+    public void onOrderCanceled(OrderCanceled orderCanceled) {
+        catchingExecute(() -> {
+            for (final OrderListener orderListener : orderListeners) {
+                orderListener.onOrderCanceled(orderCanceled);
+            }
+        });
+    }
+
+    @Override
+    public void onOrderCancelFailed(OrderCancelFailed orderCancelFailed) {
+        LOGGER.error("{}", orderCancelFailed);
+    }
+
+    @Override
+    public void onOrderModified(OrderModified orderModified) {/* no-op */ }
+
+    @Override
+    public void onOrderModificationFailed(OrderModificationFailed orderModificationFailed) { /* no-op */ }
+
+    @Override
+    public void onOrderFilled(OrderFilled orderFilled) {
+        catchingExecute(() -> {
+            for (final OrderListener orderListener : orderListeners) {
+                orderListener.onOrderFilled(orderFilled);
+            }
+        });
+    }
+
+    private void catchingExecute(Runnable runnable) {
+        executor.execute(() -> {
+            try {
+                runnable.run();
+            } catch (RuntimeException e) {
+                exceptionHandler.accept(e);
+                throw e;
+            }
+        });
     }
 }

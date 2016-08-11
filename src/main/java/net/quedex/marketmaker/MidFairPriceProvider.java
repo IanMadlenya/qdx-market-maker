@@ -13,7 +13,7 @@ public class MidFairPriceProvider implements FairPriceProvider {
     }
 
     @Override
-    public BigDecimal getFairPrice(String symbol) {
-        return marketDataManager.getMid(symbol);
+    public BigDecimal getFairPrice(int instrumentId) {
+        return marketDataManager.getMid(instrumentId);
     }
 }

@@ -10,7 +10,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class MarketMakerConfiguration {
 
-    private final int maxConnectionRetry;
     private final int timeSleepSeconds;
 
     private final BigDecimal futuresSpreadFraction;
@@ -30,7 +29,6 @@ public class MarketMakerConfiguration {
     private final double deltaLimit;
 
     public MarketMakerConfiguration(
-            int maxConnectionRetry,
             int timeSleepSeconds,
             BigDecimal futuresSpreadFraction,
             BigDecimal fairPriceSensitivityFraction,
@@ -45,7 +43,6 @@ public class MarketMakerConfiguration {
             double deltaLimit,
             double vegaLimit
     ) {
-        checkArgument(maxConnectionRetry >= 0, "maxConnectionRetry=%s < 0", maxConnectionRetry);
         checkArgument(timeSleepSeconds > 0, "timeSleepSeconds=%s <= 0", timeSleepSeconds);
         checkArgument(futuresSpreadFraction.compareTo(BigDecimal.ZERO) > 0,
                 "futuresSpreadFraction=%s <=0", futuresSpreadFraction);
@@ -64,7 +61,6 @@ public class MarketMakerConfiguration {
         checkArgument(fairVolatility - numLevels * fairVolatility * volatilitySpreadFraction > 0,
                 "Nonpositive lowest level volatility");
 
-        this.maxConnectionRetry = maxConnectionRetry;
         this.timeSleepSeconds = timeSleepSeconds;
         this.futuresSpreadFraction = futuresSpreadFraction;
         this.fairPriceSensitivityFraction = fairPriceSensitivityFraction;
@@ -83,7 +79,6 @@ public class MarketMakerConfiguration {
     public static MarketMakerConfiguration fromPropertiesFile(String fileName) throws ConfigurationException {
         Configuration configuration = new PropertiesConfiguration(fileName);
         return new MarketMakerConfiguration(
-                configuration.getInt(ConfigKey.MAX_CONNECTION_RETRY.getKey()),
                 configuration.getInt(ConfigKey.TIME_SLEEP_SECONDS.getKey()),
                 new BigDecimal(configuration.getString(ConfigKey.SPREAD_FRACTION.getKey())),
                 new BigDecimal(configuration.getString(ConfigKey.FAIR_PRICE_SENSITIVITY_FRACTION.getKey())),
@@ -91,10 +86,6 @@ public class MarketMakerConfiguration {
                 configuration.getDouble(ConfigKey.VOLATILITY_SPREAD_FRACTION.getKey()),
                 configuration.getDouble(ConfigKey.SABR_BETA.getKey()), configuration.getDouble(ConfigKey.SABR_VOL_OF_VOL.getKey()), configuration.getDouble(ConfigKey.SABR_RHO.getKey()), configuration.getBoolean(ConfigKey.SABR_USE_TIME_ADJUSTED_VOL_OF_VOL.getKey()), configuration.getInt(ConfigKey.NUM_LEVELS.getKey()), configuration.getInt(ConfigKey.QUANTITY_ON_LEVEL.getKey()), configuration.getDouble(ConfigKey.DELTA_LIMIT.getKey()), configuration.getDouble(ConfigKey.VEGA_LIMIT.getKey())
         );
-    }
-
-    public int getMaxConnectionRetry() {
-        return maxConnectionRetry;
     }
 
     public int getTimeSleepSeconds() {
@@ -150,7 +141,6 @@ public class MarketMakerConfiguration {
     }
 
     private enum ConfigKey {
-        MAX_CONNECTION_RETRY("maxConnectionRetry"),
         TIME_SLEEP_SECONDS("timeSleepSeconds"),
         SPREAD_FRACTION("futuresSpreadFraction"),
         FAIR_PRICE_SENSITIVITY_FRACTION("fairPriceSensitivityFraction"),
@@ -165,7 +155,7 @@ public class MarketMakerConfiguration {
         VEGA_LIMIT("vegaLimit"),
         DELTA_LIMIT("deltaLimit");
 
-        private static final String COMMON_PREFIX = "net.quedex.marketmaker.qdxapi";
+        private static final String COMMON_PREFIX = "net.quedex.marketmaker";
         private static final char SEPARATOR = '.';
 
         public static String getCommonPrefix() {

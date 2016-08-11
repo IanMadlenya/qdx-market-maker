@@ -1,39 +1,40 @@
-net.quedex.marketmaker.qdxapi.quedexBaseUrl = https://quedex.net/
-net.quedex.marketmaker.qdxapi.quedexUserName = <basic auth user name>
-net.quedex.marketmaker.qdxapi.quedexPassword = <basic auth password>
+net.quedex.client.api.marketStreamUrl = wss://url/market_stream
+net.quedex.client.api.marketDataUrl = https://url/market_data
+net.quedex.client.api.userStreamUrl = wss://url/user_stream
 
-net.quedex.marketmaker.qdxapi.quedexPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-----\n\
-                                                 Version: GnuPG v1\n\
-                                                 \n\
-                                                 mQENBFVodHIBCADFrSKTSaCL38hFCyDbDAvMEX0+JJY1rGIu1EV2V0SEsx90WnZJ\n\
-                                                 Mk8060ya0zAThIuTBx79xyLVOY7aYSCscJF0RI6/tqEL0I4qeluAnGVOkXLvQ6Xr\n\
-                                                 KYta8fkR3nMoTLDAJv3TFtNNyhhCPVgcISUom2Qb/u6kf3+1LAdwZmFeWH+4oiLy\n\
-                                                 VrlIz8eJBk/6cLmlYTlIDnHaWSkjr172ttAFrnIWFzSUL7NhMG/xuol05mLLiMIa\n\
-                                                 Upa+SyhG7u3A7/adBCSG8qGHF8jojItABzfqU5mdCHRWJi2nBBTyDJRHLt6ztLUy\n\
-                                                 C8at+4CumslluNflklHL6Am/3cJC4bnXOHL9ABEBAAG0G1F1ZWRleCA8Y29udGFj\n\
-                                                 dEBxdWVkZXgubmV0PokBOAQTAQIAIgUCVWh0cgIbAwYLCQgHAwIGFQgCCQoLBBYC\n\
-                                                 AwECHgECF4AACgkQ14hiscVQeU/UjggAi4o24Y+29c5csBBGtEJgzWtheBpfejNn\n\
-                                                 k3KaqRT03FefXBA0Qqd1bzo2vJp+cTfsn45kbNsY72tnobuHRsOsZyB/4KOmPwX5\n\
-                                                 U7T1lxI4hYUefXnYo5rHcsYZ1nViwDxClFnByv5/kr6NwmsM8OBb2tNLn0lBtp69\n\
-                                                 V92xPEX8pldRd5NkQGfS5c1CtJR2jIjFyU536TIbqJfN5qgYJIRGyilFe8boiuKA\n\
-                                                 ySvemFI2xmKx/1PCdl/mn7oojI/r0tqpAUfdJi/+Z8p0+x/6bnkuSVxQiNH+p3YS\n\
-                                                 KGLbJWl3ozqaF3ISgYtq4XOTVxZqFnEs9tz/u1EVt0pA2O2twYSOZrkBDQRVaHRy\n\
-                                                 AQgAozvlXCTMU/rWzwcw5usLJbZjYUVuryScJownC2lZwOERBxDKSiQ1LDYvAURj\n\
-                                                 mW3xnmYc0etSu1yrginQR7CMtF+KQ8iIqRHctEbbwamcEFwXFbUQ7DFU3XkvRRQr\n\
-                                                 BvaxY8nabj0vVwWKWH1sOqakC55LM3MJPcL3jo/+22Uvtq1NpC7vLVRUxwxUGyeS\n\
-                                                 vOTHmsjFpf537GMCvdiAz97eywiQk9grPzJLLwAWyr/FX6S7PmKLIMnjLh3IJ3nZ\n\
-                                                 3Qx1ICMOVXOM9Gv0u3PiUstcYCqFKX3KjEoxcvtOfE0xKSWn8pNPYpuzzvjpzWSS\n\
-                                                 nRmS9z+nppSyOgDlE6JK684dwwARAQABiQEfBBgBAgAJBQJVaHRyAhsMAAoJENeI\n\
-                                                 YrHFUHlPzZwH/iKr0FZdH+1hxiqMRHari0W2jkvz4yF2C2nZMLEFCCwKEM5guGd7\n\
-                                                 vsnFEYZpdIZfN8QhTatIUWnuVuXV3prA2LsKk8w7Fdj04ItjXhrwxOtnqgI1Cx9q\n\
-                                                 qFwXcOJQW9ddhJlSzuTLQtcVlwvQRqqYszZA/ZAY23eVYI77ntcc7vo8kzZ3OY0J\n\
-                                                 yphzOfqjWIoQ1xdOZ7nLTV2hOd58mwgMdllrL1q5b+24G/3+86ezudH8WSeacPTo\n\
-                                                 +E5/ucV6nRYCzjgvXOJjkKtMVfHaQjK9kzjdWDs1YvXvXr0tYFyMVF5RE2f9K+OQ\n\
-                                                 8wAV5GbyZGTukBDLJjQu8/Fsiti4BpCW3Hc=\n\
-                                                 =X3tr\n\
-                                                 -----END PGP PUBLIC KEY BLOCK-----
+net.quedex.client.api.accountId = 123456789
+net.quedex.client.api.nonceGroup = 5
 
-net.quedex.marketmaker.qdxapi.accountId = <account id>
-net.quedex.marketmaker.qdxapi.accountKey = <account private key>
-net.quedex.marketmaker.qdxapi.accountPassword = <account private key password>
-net.quedex.marketmaker.qdxapi.accountNonceGroup = <nonce group>
+dont.do.it.in.production.privateKeyPasspharse = <passphrase>
+
+net.quedex.client.api.qdxPublicKey = -----BEGIN PGP PUBLIC KEY BLOCK-----\n\
+                                     Version: GnuPG v1\n\
+                                     \n\
+                                     mQENBFVCsVABCACweQ8WHklVrS5tlL0EPiRrUGkjz1y5zSR6tf5Jjp1kKl8d5dKt\n\
+                                     Yp61Qq0d7B2Frsih/nqkMqDt1us3T7jXZ/SHgkLrhiWrUGaD4HUK0Ki+/qDYM5k5\n\
+                                     kfyLfM+Kk6+XlxWl9VecJseeuOj7pEbepLJ39vg2Cn3gjG9o/H7y7u24VCOCiu2G\n\
+                                     d13HXwcLOUifjHAtXwngPNAGCxfqO+I93cG73A2Qx6/cYpxkgXh9GauBja0Iszpv\n\
+                                     xnEaHwJfxNWjgujIeZMf9iFKkMSMwtCEYitVMMJtLS7UDy9BHf4TWLMaKqQ+7Iy/\n\
+                                     wPuO1mGl2/GEhWT0fHABBUNzvojtstasTJGtABEBAAG0JlF1ZWRleCBUZXN0IEtl\n\
+                                     eSAxIDxjb250YWN0QHF1ZWRleC5uZXQ+iQE3BBMBCAAhBQJVQrFQAhsDBQsJCAcC\n\
+                                     BhUICQoLAgQWAgMBAh4BAheAAAoJEO69Fx5tJ0UYHx8H/0MZhtUWRCuBr9os7Lfj\n\
+                                     NYEQ27ghL4CXIGu6oFjyLIbVFqj/EYfPfWgWIwNXPJL9zQf1wFRZyQl2qWzpez9u\n\
+                                     rr5AKSw5QlbAFXxA+l8u0W+IpLOaBJjfT2Yh9vSxlgsjDuSseK69u4RZIru3ZaTh\n\
+                                     myJFhu/4pxZ1AnpU3xa0WDZ/4Dgnfz2V9Bikf39bf4y8nZafD5p/fj2w60S+rW1U\n\
+                                     wK9BuMtmeyw0vFlapJk1gzEICq+ZzQLgG6iqL30APDJV05AgUFtOjzH7uBTday9r\n\
+                                     Nqt8tIhBXA/R6XPv2jLGPs9UE0HhyP+gICo1gXGp+X/Lew8tr44A/+RuubEdSBFp\n\
+                                     ajy5AQ0EVUKxUAEIAMpnXJctj9HotSo2YoncAQhSktVENdkIqhAqHZ9VxWjEQXil\n\
+                                     crAiBv4EKrLPiPCz1bg7iaz2Mte9M43df5c8texV+2rdM7VbJo0Rz54CxIoT2opw\n\
+                                     wxcam1yK/rou2YQIyl7nc3MEgf96AngBwkmK2YNtkCJvXxQ6cAWvJ82GwE2NHQ5g\n\
+                                     iutUlIlF5wd8qY7Fa0GLBR96qNE1KoJN1wvY362+HkbjJWce09EFw/veikBdIMep\n\
+                                     UZWn1s6D1A9hBEC4TL+p6l+c/+G0QsWDJuB7LDZW9MEtjmfg9svaxbeaH2RNygqg\n\
+                                     CyMaRaCMpwZIPWboEPYVe23q+IMuGBLz34LfhHkAEQEAAYkBHwQYAQgACQUCVUKx\n\
+                                     UAIbDAAKCRDuvRcebSdFGDyMCACoDCVDit8dS1zEajf7bUMzNmGVpQnv63YGuGsi\n\
+                                     9Y4+PWcPxRC8WYzfqqDyS5glxVNswqwf1RgD2E7/TYq2HnxFUvPTcwTtPUFCEr/r\n\
+                                     gCMjYp7BL2z8bVAzO/Ie3lir7xSYfg7UHd6gQipjDlBOAzGiYGQ6j+QbFsEz8H2C\n\
+                                     bb2y4uNtEVlElbJLwXt9Ui15w/4j62MADO8cRPiijF4X2p4GwpN8SgRnguz3cOaj\n\
+                                     xUURDVn8kiv0PBd/8Y5OvSUdMPDYTlOlYthm5VUz/8hcxf2YItzsnHcBfIs0aog7\n\
+                                     VPUQE6TH6Lni2qEjeCD8WGOofbyJ+NpAsRQpD43uUm/nNNFj\n\
+                                     =syaj\n\
+                                     -----END PGP PUBLIC KEY BLOCK-----
+net.quedex.client.api.userPrivateKey = <armored prv key>

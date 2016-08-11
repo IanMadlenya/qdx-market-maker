@@ -1,7 +1,7 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.Instrument;
-import net.quedex.api.entities.OrderSide;
+import net.quedex.api.market.Instrument;
+import net.quedex.api.user.OrderSide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
     public Collection<GenericOrder> getOrders(Instrument futures) {
         checkArgument(futures.isFutures(), "Expected futures");
 
-        BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getSymbol());
+        BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getInstrumentId());
         BigDecimal spread = fairPrice.multiply(spreadFraction);
 
         List<GenericOrder> orders = new ArrayList<>(levels * 2);
@@ -85,13 +85,14 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
 
         for (int i = 1; i <= levels; i++) {
 
-            BigDecimal priceRounded = futures.roundPriceToTickSize(
+            BigDecimal priceRounded = roundPriceToTickSize(
                     fairPrice.add(spread.multiply(BigDecimal.valueOf(i))),
-                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP
+                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
+                    futures.getTickSize()
             );
 
             orders.add(new GenericOrder(
-                    futures.getSymbol(),
+                    futures.getInstrumentId(),
                     side,
                     priceRounded,
                     qtyOnLevel
@@ -99,5 +100,31 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
         }
 
         return orders;
+    }
+
+    /**
+     * @param price price to be rounded, has to be positive
+     * @param roundingMode rounding mode that should be used (only {@link RoundingMode#UP} and {@link RoundingMode#DOWN}
+     *                     are supported)
+     * @return price rounded to tick size
+     * @throws IllegalArgumentException if {@code roundingMode} is neither {@link RoundingMode#UP} nor
+     *                                  {@link RoundingMode#DOWN} or {@code price} is not positive
+     */
+    static BigDecimal roundPriceToTickSize(BigDecimal price, RoundingMode roundingMode, BigDecimal tickSize) {
+        checkArgument(roundingMode == RoundingMode.UP || roundingMode == RoundingMode.DOWN,
+                "Only rounding UP or DOWN supported");
+        checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <=0", price);
+
+        BigDecimal remainder = price.remainder(tickSize);
+        if (remainder.compareTo(BigDecimal.ZERO) == 0) {
+            return price;
+        }
+
+        BigDecimal result = price.subtract(remainder);
+        if (roundingMode == RoundingMode.UP) {
+            return result.add(tickSize);
+        } else {
+            return result;
+        }
     }
 }

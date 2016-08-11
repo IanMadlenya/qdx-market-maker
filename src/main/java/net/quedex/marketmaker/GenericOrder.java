@@ -1,37 +1,46 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.LimitOrderSpec;
-import net.quedex.api.entities.OrderSide;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+import net.quedex.api.user.LimitOrderSpec;
+import net.quedex.api.user.OrderPlaced;
+import net.quedex.api.user.OrderSide;
 
 import java.math.BigDecimal;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.*;
 
 public class GenericOrder {
 
-    private final String symbol;
+    private final int instrumentId;
     private final OrderSide side;
     private final BigDecimal price;
-    private final int quantity;
+    private int quantity;
     private final int initialQuantity;
 
-    public GenericOrder(String symbol, OrderSide side, BigDecimal price, int initialQuantity) {
-        checkArgument(!symbol.isEmpty(), "Empty symbol");
+    public GenericOrder(int instrumentId, OrderSide side, BigDecimal price, int initialQuantity) {
         checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <= 0", price);
         checkArgument(initialQuantity > 0, "initialQuantity=%s <= 0", initialQuantity);
-        this.symbol = symbol;
+        this.instrumentId = instrumentId;
         this.side = checkNotNull(side, "null side");
         this.price = price;
         this.quantity = initialQuantity;
         this.initialQuantity = initialQuantity;
     }
 
-    public String getSymbol() {
-        return symbol;
+    public GenericOrder(OrderPlaced orderPlaced) {
+        this.instrumentId = orderPlaced.getInstrumentId();
+        this.side = orderPlaced.getSide();
+        this.price = orderPlaced.getPrice();
+        this.quantity = orderPlaced.getQuantity();
+        this.initialQuantity = orderPlaced.getInitialQuantity();
     }
 
-    public OrderSide getSide() {
+    public int getInstrumentId() {
+        return instrumentId;
+    }
+
+    public  OrderSide getSide() {
         return side;
     }
 
@@ -51,13 +60,50 @@ public class GenericOrder {
         return initialQuantity - quantity;
     }
 
+    public boolean isFullyFilled() {
+        return quantity == 0;
+    }
+
+    public void fill(int filledQuantity) {
+        quantity -= filledQuantity;
+        checkState(quantity >= 0, "quantity=%s < 0 after fill", quantity);
+    }
+
     public LimitOrderSpec toLimitOrderSpec(long clientOrderId) {
         return new LimitOrderSpec(
                 clientOrderId,
-                symbol,
+                instrumentId,
                 side,
                 initialQuantity,
                 price
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GenericOrder that = (GenericOrder) o;
+        return instrumentId == that.instrumentId &&
+                quantity == that.quantity &&
+                initialQuantity == that.initialQuantity &&
+                side == that.side &&
+                Objects.equal(price, that.price);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(instrumentId, side, price, quantity, initialQuantity);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("instrumentId", instrumentId)
+                .add("side", side)
+                .add("price", price)
+                .add("quantity", quantity)
+                .add("initialQuantity", initialQuantity)
+                .toString();
     }
 }

@@ -1,5 +1,3 @@
-# max number of connection retires to QDX
-net.quedex.marketmaker.qdxapi.maxConnectionRetry = 5
 # sleep time between market maker actions in seconds
 net.quedex.marketmaker.qdxapi.timeSleepSeconds = 10
 

@@ -5,5 +5,5 @@ import java.math.BigDecimal;
 @FunctionalInterface
 public interface FairPriceProvider {
 
-    BigDecimal getFairPrice(String symbol);
+    BigDecimal getFairPrice(int instrumentId);
 }

@@ -13,7 +13,7 @@ public class LastFairPriceProvider implements FairPriceProvider {
     }
 
     @Override
-    public BigDecimal getFairPrice(String symbol) {
-        return marketDataManager.getLastTradePrice(symbol);
+    public BigDecimal getFairPrice(int instrumentId) {
+        return marketDataManager.getLastTradePrice(instrumentId);
     }
 }

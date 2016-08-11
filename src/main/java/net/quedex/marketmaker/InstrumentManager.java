@@ -1,6 +1,6 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.Instrument;
+import net.quedex.api.market.Instrument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,18 +16,18 @@ public class InstrumentManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstrumentManager.class);
 
     private final TimeProvider timeProvider;
-    private final Map<String, Instrument> instruments;
+    private final Map<Integer, Instrument> instruments;
 
-    public InstrumentManager(TimeProvider timeProvider, Map<String, Instrument> instruments) {
+    public InstrumentManager(TimeProvider timeProvider, Map<Integer, Instrument> instruments) {
         this.timeProvider = checkNotNull(timeProvider, "null timeProvider");
         this.instruments = checkNotNull(instruments, "null instruments");
 
         LOGGER.info("Initialised with instruments: {}", instruments);
     }
 
-    public Instrument getInstrument(String symbol) {
-        checkArgument(instruments.containsKey(symbol), "Instrument with symbol: %s not found", symbol);
-        return instruments.get(symbol);
+    public Instrument getInstrument(int instrumentId) {
+        checkArgument(instruments.containsKey(instrumentId), "instrumentId=%s not found", instrumentId);
+        return instruments.get(instrumentId);
     }
 
     public List<Instrument> getTradedInstruments() {

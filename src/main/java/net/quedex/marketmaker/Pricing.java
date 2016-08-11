@@ -1,8 +1,7 @@
 package net.quedex.marketmaker;
 
 import com.google.common.base.MoreObjects;
-import net.quedex.api.entities.Instrument;
-import net.quedex.api.entities.InstrumentType;
+import net.quedex.api.market.Instrument;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import java.math.BigDecimal;
@@ -41,13 +40,13 @@ public class Pricing {
     }
 
     public Metrics calculateMetrics(Instrument instrument, double volatility, double futuresPrice) {
-        if (instrument.getInstrumentType() == InstrumentType.FUTURES) {
+        if (instrument.getType() == Instrument.Type.FUTURES) {
             return new Metrics(futuresPrice, 1, 0, 0, 0);
         } else {
             double timeToMaturity = yearsToMaturity(instrument.getExpirationDate());
             double strike = instrument.getStrike().get().doubleValue();
             return black76(
-                    instrument.getInstrumentType(),
+                    instrument.getOptionType().get(),
                     getSABRImpliedVolatility(volatility, futuresPrice, timeToMaturity, strike),
                     futuresPrice,
                     timeToMaturity,
@@ -59,7 +58,7 @@ public class Pricing {
     /**
      * Based on http://www.riskencyclopedia.com/articles/black_1976/
      */
-    private Metrics black76(InstrumentType type, double s, double f, double t, double x) {
+    private Metrics black76(Instrument.OptionType type, double s, double f, double t, double x) {
 
         final double sqrtT = Math.sqrt(t);
         final double d1 = (Math.log(f / x) + (s * s / 2) * t) / (s * sqrtT);
@@ -74,7 +73,7 @@ public class Pricing {
         final double theta = (-(f * densityD1 * s) / (2 * sqrtT)) / 365.0;
 
         double price;
-        if (type == InstrumentType.OPTION_EUROPEAN_CALL) {
+        if (type == Instrument.OptionType.CALL_EUROPEAN) {
             price = f * cdfD1 - x * STD_NORMAL.cumulativeProbability(d2);
         } else {
             price = x * STD_NORMAL.cumulativeProbability(-d2) - f * (1 - cdfD1);

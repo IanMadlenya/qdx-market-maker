@@ -1,6 +1,6 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.Instrument;
+import net.quedex.api.market.Instrument;
 
 import java.util.Collection;
 

@@ -1,13 +1,20 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.QdxEndpoint;
-import net.quedex.api.entities.*;
+import net.quedex.api.common.CommunicationException;
+import net.quedex.api.market.Instrument;
+import net.quedex.api.market.MarketData;
+import net.quedex.api.market.MarketStream;
+import net.quedex.api.user.AccountState;
+import net.quedex.api.user.OrderSpec;
+import net.quedex.api.user.UserStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -15,39 +22,76 @@ public class MarketMakerRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketMakerRunner.class);
 
-    private final QdxEndpoint qdxEndpoint;
+    private final MarketData marketData;
+    private final MarketStream marketStream;
+    private final UserStream userStream;
     private final MarketMakerConfiguration marketMakerConfiguration;
-    private final int maxRetry;
     private final int sleepTimeSeconds;
 
-    public MarketMakerRunner(QdxEndpoint qdxEndpoint, MarketMakerConfiguration marketMakerConfiguration) {
-        this.qdxEndpoint = checkNotNull(qdxEndpoint, "null qdxEndpoint");
-        this.marketMakerConfiguration = checkNotNull(marketMakerConfiguration, "null marketMakerConfiguration");
-        this.maxRetry = marketMakerConfiguration.getMaxConnectionRetry();
-        this.sleepTimeSeconds = marketMakerConfiguration.getTimeSleepSeconds();
+    private volatile boolean running = false;
+
+    public MarketMakerRunner(
+            MarketData marketData,
+            MarketStream marketStream,
+            UserStream userStream,
+            MarketMakerConfiguration mmConfig
+    ) {
+        this.marketData = checkNotNull(marketData, "null marketData");
+        this.marketStream = checkNotNull(marketStream, "null marketStream");
+        this.userStream = checkNotNull(userStream, "null userStream");
+        this.marketMakerConfiguration = checkNotNull(mmConfig, "null marketMakerConfiguration");
+        this.sleepTimeSeconds = mmConfig.getTimeSleepSeconds();
     }
 
     public void runLoop() {
-        try {
-            LOGGER.info("Initialising");
-            qdxEndpoint.initialize();
 
-            MarketMaker marketMaker = new MarketMaker(
+        marketStream.registerStreamFailureListener(this::onError);
+        userStream.registerStreamFailureListener(this::onError);
+
+        try {
+            marketStream.start();
+            userStream.start();
+        } catch (CommunicationException e) {
+            LOGGER.error("Error starting streams", e);
+            return;
+        }
+
+        MarketMaker marketMaker;
+        Map<Integer, Instrument> instruments;
+        try {
+            instruments = marketData.getInstruments();
+            marketMaker = new MarketMaker(
                     new RealTimeProvider(),
                     marketMakerConfiguration,
-                    getInstrumentData(),
-                    getAccountState()
+                    instruments,
+                    this::onError
             );
+        } catch (CommunicationException e) {
+            LOGGER.error("Error initialising instruments", e);
+            return;
+        }
+
+        try {
+            LOGGER.info("Initialising");
+
+            CompletableFuture<AccountState> initialAccountStateFuture = new CompletableFuture<>();
+
+            marketStream.registerQuotesListener(marketMaker).subscribe(instruments.keySet());
+
+            userStream.registerOpenPositionListener(marketMaker);
+            userStream.registerOrderListener(marketMaker);
+            userStream.registerAccountStateListener(initialAccountStateFuture::complete);
+            userStream.subscribeListeners();
+
+            initialAccountStateFuture.get(); // await initial state
+            userStream.registerAccountStateListener(null); // not used anymore
 
             LOGGER.info("Running");
-            while (!Thread.currentThread().isInterrupted()) {
+            running = true;
+            while (running) {
 
-                marketMaker.update(getInstrumentData());
-                marketMaker.update(getAccountState());
-                marketMaker.recalculate();
-
-                cancelOrders(marketMaker.getOrdersToCancel());
-                placeOrders(marketMaker.getOrdersToPlace());
+                Future<List<OrderSpec>> orderSpecs = marketMaker.recalculate();
+                send(orderSpecs.get());
 
                 try {
                     Thread.sleep(sleepTimeSeconds * 1000L);
@@ -61,72 +105,49 @@ public class MarketMakerRunner {
             LOGGER.info("Stopping");
             try {
                 LOGGER.info("Cancelling all pending orders");
-                cancelOrders(
-                        getAccountState().getPendingOrders().values()
-                                .stream()
-                                .flatMap(PendingOrders::stream)
-                                .map(UserOrderInfo::getClientOrderId)
-                                .collect(Collectors.toList())
-                );
+                try {
+                    send(marketMaker.getAllOrderCancels().get());
+                    Thread.sleep(10_000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    LOGGER.error("Error getting all order cancels", e);
+                }
             } finally {
-                qdxEndpoint.stop();
+                try {
+                    userStream.stop();
+                    marketStream.stop();
+                } catch (CommunicationException e) {
+                    LOGGER.error("Error stopping streams", e);
+                }
                 LOGGER.info("Stopped");
             }
         }
+
+        marketMaker.stop();
+
+        try {
+            userStream.stop();
+            marketStream.stop();
+        } catch (CommunicationException e) {
+            LOGGER.error("Error stopping streams", e);
+        }
     }
 
-    private void cancelOrders(List<Long> idsToBeCancelled) {
-        if (idsToBeCancelled.isEmpty()) {
-            LOGGER.debug("Nothing to cancel");
+    public void stop() {
+        running = false;
+    }
+
+    private void onError(Exception e) {
+        LOGGER.error("Async terminal error", e);
+        stop();
+    }
+
+    private void send(List<OrderSpec> orderSpecs) {
+        LOGGER.debug("send({})", orderSpecs);
+        if (orderSpecs.isEmpty()) {
             return;
         }
-        LOGGER.debug("Cancelling: {}", idsToBeCancelled);
-        withRetry(() -> qdxEndpoint.cancelOrders(idsToBeCancelled)); // ignore result
-    }
-
-    private void placeOrders(List<LimitOrderSpec> ordersToBePlaced) {
-        if (ordersToBePlaced.isEmpty()) {
-            LOGGER.debug("Nothing to place");
-            return;
-        }
-        LOGGER.debug("Placing: {}", ordersToBePlaced);
-        List<OrderPlaceResult> results = withRetry(() -> qdxEndpoint.placeOrders(ordersToBePlaced));
-        for (int i = 0; i < results.size(); i++) {
-            if (!results.get(i).isSuccess()) {
-                LOGGER.error("Order: {} failed: {}",
-                        ordersToBePlaced.get(i), results.get(i).getErrorMessage().replaceAll("\\n", " "));
-            }
-        }
-    }
-
-    private AccountState getAccountState() {
-        return withRetry(qdxEndpoint::getAccountState);
-    }
-
-    private InstrumentData getInstrumentData() {
-        return withRetry(qdxEndpoint::getInstrumentData);
-    }
-
-    private <T> T withRetry(Callable<T> supplier) {
-        int retry = 0;
-        RuntimeException ex = null;
-        while (retry < maxRetry) {
-            try {
-                return supplier.call();
-            } catch (Exception e) {
-                ex = new IllegalStateException("Failed after retries: " + maxRetry, e);
-                if (e instanceof RuntimeException) {
-                    break;
-                }
-                LOGGER.warn("Failure when retrying", e);
-                retry++;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-        throw ex;
+        userStream.batch(orderSpecs);
     }
 }

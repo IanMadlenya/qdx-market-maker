@@ -1,66 +1,53 @@
 package net.quedex.marketmaker;
 
-import com.google.common.collect.ImmutableMap;
-import net.quedex.api.entities.BuySellBook;
-import net.quedex.api.entities.InstrumentData;
-import net.quedex.api.entities.TradeInfo;
+import net.quedex.api.market.PriceQuantity;
+import net.quedex.api.market.Quotes;
+import net.quedex.api.market.QuotesListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class MarketDataManager implements InstrumentDataUpdateable {
+public class MarketDataManager implements QuotesListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketDataManager.class);
     private static final BigDecimal TWO = BigDecimal.valueOf(2);
 
-    private final Map<String, TradeInfo> lastTrades = new HashMap<>();
-    private Map<String, BuySellBook> orderBook = ImmutableMap.of();
+    private final Map<Integer, Quotes> instrumentIdToQuotes = new HashMap<>();
 
-    @Override
-    public void update(InstrumentData instrumentData) {
-        instrumentData.getTrades().forEach((symbol, trades) -> {
-            lastTrades.put(symbol, getLast(trades));
-        });
-        orderBook = instrumentData.getOrderBook();
-        LOGGER.debug("Updated");
+    public BigDecimal getLastTradePrice(int instrumentId) {
+        Quotes quotes = instrumentIdToQuotes.get(instrumentId);
+        checkArgument(quotes != null, "No quotes for %s", instrumentId);
+        return quotes.getLast();
     }
 
-    public BigDecimal getLastTradePrice(String symbol) {
-        checkArgument(lastTrades.containsKey(symbol), "No last trade for %s", symbol);
-        return lastTrades.get(symbol).getPrice();
-    }
+    public BigDecimal getMid(int instrumentId) {
+        Quotes quotes = instrumentIdToQuotes.get(instrumentId);
+        checkArgument(quotes != null, "No quotes for %s", instrumentId);
 
-    public BigDecimal getMid(String symbol) {
-        BuySellBook book = orderBook.get(symbol);
-        checkArgument(book != null, "No order book for %s", symbol);
+        Optional<BigDecimal> bidPrice = quotes.getBid().orElse(new PriceQuantity(0)).getPrice();
+        Optional<BigDecimal> askPrice = quotes.getAsk().orElse(new PriceQuantity(0)).getPrice();
 
-        if (!book.getBuyLimits().isEmpty() && !book.getSellLimits().isEmpty()) {
-
-            return (book.getBuyLimits().get(0).getPrice().get().add(book.getSellLimits().get(0).getPrice().get()))
-                    .divide(TWO, 8, RoundingMode.HALF_EVEN);
-
-        } else if (!book.getSellLimits().isEmpty()) {
-
-            return book.getSellLimits().get(0).getPrice().get();
-
-        } else if (!book.getBuyLimits().isEmpty()) {
-
-            return book.getBuyLimits().get(0).getPrice().get();
-
+        if (bidPrice.isPresent() && askPrice.isPresent()) {
+            return bidPrice.get().add(askPrice.get()).divide(TWO, 8, RoundingMode.HALF_EVEN);
+        } else if (bidPrice.isPresent()) {
+            return bidPrice.get();
+        } else if (askPrice.isPresent()) {
+            return askPrice.get();
         } else {
-
-            return getLastTradePrice(symbol); // use last in case of empty OB
+            return quotes.getLast(); // use last in case of empty OB
         }
     }
 
-    private static <T> T getLast(List<T> fromList) {
-        return fromList.get(fromList.size() - 1);
+    @Override
+    public void onQuotes(Quotes quotes) {
+        LOGGER.trace("{}", quotes);
+        instrumentIdToQuotes.put(quotes.getInstrumentId(), quotes);
     }
 }

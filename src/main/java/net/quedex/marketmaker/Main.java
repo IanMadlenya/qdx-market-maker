@@ -1,9 +1,17 @@
 package net.quedex.marketmaker;
 
 import com.google.common.io.Resources;
-import net.quedex.api.QdxEndpoint;
-import net.quedex.api.QdxEndpointProvider;
-import net.quedex.api.QdxEndpointProviderConfigFactory;
+import net.quedex.api.common.Config;
+import net.quedex.api.market.HttpMarketData;
+import net.quedex.api.market.MarketData;
+import net.quedex.api.market.MarketStream;
+import net.quedex.api.market.WebsocketMarketStream;
+import net.quedex.api.user.UserStream;
+import net.quedex.api.user.WebsocketUserStream;
+
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Main {
     private Main() { throw new AssertionError(); }
@@ -14,34 +22,36 @@ public class Main {
             printUsageAndExit();
         }
 
-        String qdxConfig;
-        String mmConfig;
+        InputStream qdxConfigIS;
+        String mmConfigPath;
 
         if (args.length > 0) {
-            qdxConfig = args[0];
-            mmConfig = args[1];
+            qdxConfigIS = Files.newInputStream(Paths.get(args[0]));
+            mmConfigPath = args[1];
         } else {
-            qdxConfig = Resources.getResource("quedex-config.properties").toString();
-            mmConfig = Resources.getResource("market-maker.properties").toString();
+            qdxConfigIS = Resources.getResource("quedex-config.properties").openStream();
+            mmConfigPath = Resources.getResource("market-maker.properties").toString();
         }
 
-        QdxEndpoint qdxEndPoint = new QdxEndpointProvider(
-                new QdxEndpointProviderConfigFactory(qdxConfig).getConfiguration()
-        ).getQdxEndPoint();
+        Config qdxConfig = Config.fromInputStream(qdxConfigIS, "qwer".toCharArray());
+        MarketData marketData = new HttpMarketData(qdxConfig);
+        MarketStream marketStream = new WebsocketMarketStream(qdxConfig);
+        UserStream userStream = new WebsocketUserStream(qdxConfig);
+
 
         MarketMakerRunner mm = new MarketMakerRunner(
-                qdxEndPoint,
-                MarketMakerConfiguration.fromPropertiesFile(mmConfig)
+                marketData,
+                marketStream,
+                userStream,
+                MarketMakerConfiguration.fromPropertiesFile(mmConfigPath)
         );
-
-        Thread runnerThread = Thread.currentThread();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                runnerThread.interrupt();
+                mm.stop();
                 try {
-                    runnerThread.join(1000L * 30); // wait 30 seconds max
+                    Thread.sleep(10_000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
