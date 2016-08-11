@@ -1,7 +1,5 @@
 package net.quedex.marketmaker;
 
-import net.quedex.api.entities.*;
-
 import javax.annotation.concurrent.NotThreadSafe;
 import java.math.BigDecimal;
 import java.util.ArrayList;
