@@ -18,8 +18,8 @@ import java.util.concurrent.Future;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MarketMakerRunner {
-
+public class MarketMakerRunner
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketMakerRunner.class);
 
     private final MarketData marketData;
@@ -31,11 +31,11 @@ public class MarketMakerRunner {
     private volatile boolean running = false;
 
     public MarketMakerRunner(
-            MarketData marketData,
-            MarketStream marketStream,
-            UserStream userStream,
-            MarketMakerConfiguration mmConfig
-    ) {
+        final MarketData marketData,
+        final MarketStream marketStream,
+        final UserStream userStream,
+        final MarketMakerConfiguration mmConfig)
+    {
         this.marketData = checkNotNull(marketData, "null marketData");
         this.marketStream = checkNotNull(marketStream, "null marketStream");
         this.userStream = checkNotNull(userStream, "null userStream");
@@ -43,38 +43,46 @@ public class MarketMakerRunner {
         this.sleepTimeSeconds = mmConfig.getTimeSleepSeconds();
     }
 
-    public void runLoop() {
-
+    public void runLoop()
+    {
         marketStream.registerStreamFailureListener(this::onError);
         userStream.registerStreamFailureListener(this::onError);
 
-        try {
+        try
+        {
             marketStream.start();
             userStream.start();
-        } catch (CommunicationException e) {
+        }
+        catch (final CommunicationException e)
+        {
             LOGGER.error("Error starting streams", e);
             return;
         }
 
-        MarketMaker marketMaker;
-        Map<Integer, Instrument> instruments;
-        try {
+        final MarketMaker marketMaker;
+        final Map<Integer, Instrument> instruments;
+
+        try
+        {
             instruments = marketData.getInstruments();
             marketMaker = new MarketMaker(
-                    new RealTimeProvider(),
-                    marketMakerConfiguration,
-                    instruments,
-                    this::onError
+                new RealTimeProvider(),
+                marketMakerConfiguration,
+                instruments,
+                this::onError
             );
-        } catch (CommunicationException e) {
+        }
+        catch (final CommunicationException e)
+        {
             LOGGER.error("Error initialising instruments", e);
             return;
         }
 
-        try {
+        try
+        {
             LOGGER.info("Initialising");
 
-            CompletableFuture<AccountState> initialAccountStateFuture = new CompletableFuture<>();
+            final CompletableFuture<AccountState> initialAccountStateFuture = new CompletableFuture<>();
 
             marketStream.registerQuotesListener(marketMaker).subscribe(instruments.keySet());
 
@@ -88,36 +96,55 @@ public class MarketMakerRunner {
 
             LOGGER.info("Running");
             running = true;
-            while (running) {
 
-                Future<List<OrderSpec>> orderSpecs = marketMaker.recalculate();
+            while (running)
+            {
+                final Future<List<OrderSpec>> orderSpecs = marketMaker.recalculate();
                 send(orderSpecs.get());
 
-                try {
+                try
+                {
                     Thread.sleep(sleepTimeSeconds * 1000L);
-                } catch (InterruptedException e) {
+                }
+                catch (final InterruptedException e)
+                {
                     Thread.currentThread().interrupt();
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (final Exception e)
+        {
             LOGGER.error("Terminal error", e);
-        } finally {
+        }
+        finally
+        {
             LOGGER.info("Stopping");
-            try {
+            try
+            {
                 LOGGER.info("Cancelling all pending orders");
-                try {
+                try
+                {
                     send(marketMaker.getAllOrderCancels().get());
                     Thread.sleep(10_000);
-                } catch (InterruptedException e) {
+                }
+                catch (final InterruptedException e)
+                {
                     Thread.currentThread().interrupt();
-                } catch (ExecutionException e) {
+                }
+                catch (final ExecutionException e)
+                {
                     LOGGER.error("Error getting all order cancels", e);
                 }
-            } finally {
-                try {
+            }
+            finally
+            {
+                try
+                {
                     userStream.stop();
                     marketStream.stop();
-                } catch (CommunicationException e) {
+                }
+                catch (final CommunicationException e)
+                {
                     LOGGER.error("Error stopping streams", e);
                 }
                 LOGGER.info("Stopped");
@@ -126,26 +153,33 @@ public class MarketMakerRunner {
 
         marketMaker.stop();
 
-        try {
+        try
+        {
             userStream.stop();
             marketStream.stop();
-        } catch (CommunicationException e) {
+        }
+        catch (final CommunicationException e)
+        {
             LOGGER.error("Error stopping streams", e);
         }
     }
 
-    public void stop() {
+    public void stop()
+    {
         running = false;
     }
 
-    private void onError(Exception e) {
+    private void onError(final Exception e)
+    {
         LOGGER.error("Async terminal error", e);
         stop();
     }
 
-    private void send(List<OrderSpec> orderSpecs) {
+    private void send(final List<OrderSpec> orderSpecs)
+    {
         LOGGER.debug("send({})", orderSpecs);
-        if (orderSpecs.isEmpty()) {
+        if (orderSpecs.isEmpty())
+        {
             return;
         }
         userStream.batch(orderSpecs);

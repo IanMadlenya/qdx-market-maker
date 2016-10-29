@@ -14,8 +14,8 @@ import java.util.List;
 import static com.google.common.base.Preconditions.*;
 import static net.quedex.marketmaker.UniformFuturesOrderPlacingStrategy.roundPriceToTickSize;
 
-public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
-
+public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(UniformOptionOrderPlacingStrategy.class);
 
     private final FairPriceProvider fairVolatilityProvider;
@@ -31,23 +31,24 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
     private final double volaSpreadFraction;
 
     public UniformOptionOrderPlacingStrategy(
-            FairPriceProvider fairVolatilityProvider,
-            FairPriceProvider futuresFairPriceProvider,
-            RiskManager riskManager,
-            InstrumentManager instrumentManager,
-            Pricing pricing,
-            int levels,
-            int qtyOnLevel,
-            double deltaLimit,
-            double vegaLimit,
-            double volaSpreadFraction
-    ) {
+        final FairPriceProvider fairVolatilityProvider,
+        final FairPriceProvider futuresFairPriceProvider,
+        final RiskManager riskManager,
+        final InstrumentManager instrumentManager,
+        final Pricing pricing,
+        final int levels,
+        final int qtyOnLevel,
+        final double deltaLimit,
+        final double vegaLimit,
+        final double volaSpreadFraction)
+    {
         checkArgument(levels >= 0, "numLevels=%s < 0", levels);
         checkArgument(qtyOnLevel > 0, "qtyOnLevel=%s <= 0", qtyOnLevel);
         checkArgument(deltaLimit >= 0, "deltaLimit=%s < 0", deltaLimit);
         checkArgument(vegaLimit >= 0, "vegaLimit=%s < 0", vegaLimit);
         checkArgument(volaSpreadFraction > 0, "volaSpreadFraction=%s <= 0", volaSpreadFraction);
-        this.fairVolatilityProvider =  checkNotNull(fairVolatilityProvider, "null fairVolatilityProvider");
+
+        this.fairVolatilityProvider = checkNotNull(fairVolatilityProvider, "null fairVolatilityProvider");
         this.futuresFairPriceProvider = checkNotNull(futuresFairPriceProvider, "null futuresFairPriceProvider");
         this.riskManager = checkNotNull(riskManager, "null riskManager");
         this.instrumentManager = checkNotNull(instrumentManager, "null instrumentManager");
@@ -60,58 +61,73 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
     }
 
     @Override
-    public Collection<GenericOrder> getOrders(Instrument option) {
+    public Collection<GenericOrder> getOrders(final Instrument option)
+    {
         checkArgument(!option.isFutures(), "Expected option");
 
-        double fairVola = fairVolatilityProvider.getFairPrice(option.getInstrumentId()).doubleValue();
-        double volaSpread = volaSpreadFraction * fairVola;
-        double fairFuturesPrice = futuresFairPriceProvider.getFairPrice(
-                instrumentManager.getFuturesAtExpiration(option.getExpirationDate()).getInstrumentId()
+        final double fairVola = fairVolatilityProvider.getFairPrice(option.getInstrumentId()).doubleValue();
+        final double volaSpread = volaSpreadFraction * fairVola;
+        final double fairFuturesPrice = futuresFairPriceProvider.getFairPrice(
+            instrumentManager.getFuturesAtExpiration(option.getExpirationDate()).getInstrumentId()
         ).doubleValue();
 
-        List<GenericOrder> orders = new ArrayList<>(levels * 2);
-        double totalDelta = riskManager.getTotalDelta();
-        double totalVega = riskManager.getTotalVega();
+        final List<GenericOrder> orders = new ArrayList<>(levels * 2);
+        final double totalDelta = riskManager.getTotalDelta();
+        final double totalVega = riskManager.getTotalVega();
 
         boolean placeBuys = true;
         boolean placeSells = true;
 
-        if (option.getOptionType().get() == Instrument.OptionType.CALL_EUROPEAN) {
-
-            if (totalDelta >= deltaLimit) {
+        if (option.getOptionType().get() == Instrument.OptionType.CALL_EUROPEAN)
+        {
+            if (totalDelta >= deltaLimit)
+            {
                 placeBuys = false;
-            } else if (totalDelta <= -deltaLimit) {
+            }
+            else if (totalDelta <= -deltaLimit)
+            {
                 placeSells = false;
             }
 
-        } else {
-
-            if (totalDelta >= deltaLimit) {
+        }
+        else
+        {
+            if (totalDelta >= deltaLimit)
+            {
                 placeSells = false;
-            } else if (totalDelta <= -deltaLimit) {
+            }
+            else if (totalDelta <= -deltaLimit)
+            {
                 placeBuys = false;
             }
         }
 
-        if (totalVega >= vegaLimit) {
+        if (totalVega >= vegaLimit)
+        {
             placeBuys = false;
-        } else if (totalVega <= -vegaLimit) {
+        }
+        else if (totalVega <= -vegaLimit)
+        {
             placeSells = false;
         }
 
         BigDecimal bid = null;
         BigDecimal ask = null;
 
-        if (placeBuys) {
+        if (placeBuys)
+        {
             bid = addOrders(orders, option, OrderSide.BUY, fairVola, -volaSpread, fairFuturesPrice);
         }
-        if (placeSells) {
+
+        if (placeSells)
+        {
             ask = addOrders(orders, option, OrderSide.SELL, fairVola, volaSpread, fairFuturesPrice);
         }
 
         LOGGER.info("Generated orders {}: Bid = {}, Ask = {}", option.getSymbol(), bid, ask);
 
-        if (bid != null && ask != null) {
+        if (bid != null && ask != null)
+        {
             checkState(bid.compareTo(ask) < 0, "bid=%s >= %s=ask", bid, ask);
         }
 
@@ -119,40 +135,45 @@ public class UniformOptionOrderPlacingStrategy implements OrderPlacingStrategy {
     }
 
     private BigDecimal addOrders(
-            List<GenericOrder> orders,
-            Instrument option,
-            OrderSide side,
-            double fairVola,
-            double spread,
-            double futuresPrice
-    ) {
+        final List<GenericOrder> orders,
+        final Instrument option,
+        final OrderSide side,
+        final double fairVola,
+        final double spread,
+        final double futuresPrice)
+    {
         BigDecimal best = null;
 
-        for (int i = 1; i <= levels; i++) {
-
+        for (int i = 1; i <= levels; i++)
+        {
             BigDecimal priceRounded = roundPriceToTickSize(
-                    BigDecimal.valueOf(pricing.calculateMetrics(option, fairVola + i * spread, futuresPrice).getPrice()),
-                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
-                    option.getTickSize()
+                BigDecimal.valueOf(pricing.calculateMetrics(option, fairVola + i * spread, futuresPrice).getPrice()),
+                side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
+                option.getTickSize()
             );
 
-            if (priceRounded.compareTo(BigDecimal.ZERO) == 0) {
-                if (side == OrderSide.BUY) {
+            if (priceRounded.compareTo(BigDecimal.ZERO) == 0)
+            {
+                if (side == OrderSide.BUY)
+                {
                     continue;
-                } else {
+                }
+                else
+                {
                     priceRounded = option.getTickSize();
                 }
             }
 
-            if (best == null) {
+            if (best == null)
+            {
                 best = priceRounded;
             }
 
             orders.add(new GenericOrder(
-                    option.getInstrumentId(),
-                    side,
-                    priceRounded,
-                    qtyOnLevel
+                option.getInstrumentId(),
+                side,
+                priceRounded,
+                qtyOnLevel
             ));
         }
 

@@ -14,8 +14,8 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy {
-
+public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(UniformFuturesOrderPlacingStrategy.class);
 
     private final FairPriceProvider fairPriceProvider;
@@ -27,13 +27,13 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
     private final BigDecimal spreadFraction;
 
     public UniformFuturesOrderPlacingStrategy(
-            FairPriceProvider fairPriceProvider,
-            RiskManager riskManager,
-            int levels,
-            int qtyOnLevel,
-            double deltaLimit,
-            BigDecimal spreadFraction
-    ) {
+        final FairPriceProvider fairPriceProvider,
+        final RiskManager riskManager,
+        final int levels,
+        final int qtyOnLevel,
+        final double deltaLimit,
+        final BigDecimal spreadFraction)
+    {
         checkArgument(levels >= 0, "numLevels=%s < 0", levels);
         checkArgument(qtyOnLevel > 0, "qtyOnLevel=%s <= 0", qtyOnLevel);
         checkArgument(deltaLimit >= 0, "deltaLimit=%s < 0", deltaLimit);
@@ -47,25 +47,29 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
     }
 
     @Override
-    public Collection<GenericOrder> getOrders(Instrument futures) {
+    public Collection<GenericOrder> getOrders(final Instrument futures)
+    {
         checkArgument(futures.isFutures(), "Expected futures");
 
-        BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getInstrumentId());
-        BigDecimal spread = fairPrice.multiply(spreadFraction);
+        final BigDecimal fairPrice = fairPriceProvider.getFairPrice(futures.getInstrumentId());
+        final BigDecimal spread = fairPrice.multiply(spreadFraction);
 
-        List<GenericOrder> orders = new ArrayList<>(levels * 2);
-        double totalDelta = riskManager.getTotalDelta();
+        final List<GenericOrder> orders = new ArrayList<>(levels * 2);
+        final double totalDelta = riskManager.getTotalDelta();
 
         BigDecimal bid = null;
         BigDecimal ask = null;
 
-        if (totalDelta < deltaLimit) {
-            List<GenericOrder> buys = getOrders(futures, OrderSide.BUY, fairPrice, spread.negate());
+        if (totalDelta < deltaLimit)
+        {
+            final List<GenericOrder> buys = getOrders(futures, OrderSide.BUY, fairPrice, spread.negate());
             bid = buys.get(0).getPrice();
             orders.addAll(buys);
         } // otherwise above limit - don't want to increase delta
-        if (totalDelta > -deltaLimit) {
-            List<GenericOrder> sells = getOrders(futures, OrderSide.SELL, fairPrice, spread);
+
+        if (totalDelta > -deltaLimit)
+        {
+            final List<GenericOrder> sells = getOrders(futures, OrderSide.SELL, fairPrice, spread);
             ask = sells.get(0).getPrice();
             orders.addAll(sells);
         } // otherwise below limit - don't want to decrease delta
@@ -76,26 +80,26 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
     }
 
     private List<GenericOrder> getOrders(
-            Instrument futures,
-            OrderSide side,
-            BigDecimal fairPrice,
-            BigDecimal spread
-    ) {
-        List<GenericOrder> orders = new ArrayList<>(levels);
+        final Instrument futures,
+        final OrderSide side,
+        final BigDecimal fairPrice,
+        final BigDecimal spread)
+    {
+        final List<GenericOrder> orders = new ArrayList<>(levels);
 
-        for (int i = 1; i <= levels; i++) {
-
-            BigDecimal priceRounded = roundPriceToTickSize(
-                    fairPrice.add(spread.multiply(BigDecimal.valueOf(i))),
-                    side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
-                    futures.getTickSize()
+        for (int i = 1; i <= levels; i++)
+        {
+            final BigDecimal priceRounded = roundPriceToTickSize(
+                fairPrice.add(spread.multiply(BigDecimal.valueOf(i))),
+                side == OrderSide.BUY ? RoundingMode.DOWN : RoundingMode.UP,
+                futures.getTickSize()
             );
 
             orders.add(new GenericOrder(
-                    futures.getInstrumentId(),
-                    side,
-                    priceRounded,
-                    qtyOnLevel
+                futures.getInstrumentId(),
+                side,
+                priceRounded,
+                qtyOnLevel
             ));
         }
 
@@ -103,27 +107,34 @@ public class UniformFuturesOrderPlacingStrategy implements OrderPlacingStrategy 
     }
 
     /**
-     * @param price price to be rounded, has to be positive
+     * @param price        price to be rounded, has to be positive
      * @param roundingMode rounding mode that should be used (only {@link RoundingMode#UP} and {@link RoundingMode#DOWN}
      *                     are supported)
      * @return price rounded to tick size
      * @throws IllegalArgumentException if {@code roundingMode} is neither {@link RoundingMode#UP} nor
      *                                  {@link RoundingMode#DOWN} or {@code price} is not positive
      */
-    static BigDecimal roundPriceToTickSize(BigDecimal price, RoundingMode roundingMode, BigDecimal tickSize) {
-        checkArgument(roundingMode == RoundingMode.UP || roundingMode == RoundingMode.DOWN,
-                "Only rounding UP or DOWN supported");
+    static BigDecimal roundPriceToTickSize(final BigDecimal price, final RoundingMode roundingMode, final BigDecimal tickSize)
+    {
+        checkArgument(
+            roundingMode == RoundingMode.UP || roundingMode == RoundingMode.DOWN,
+            "Only rounding UP or DOWN supported"
+        );
         checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <=0", price);
 
-        BigDecimal remainder = price.remainder(tickSize);
-        if (remainder.compareTo(BigDecimal.ZERO) == 0) {
+        final BigDecimal remainder = price.remainder(tickSize);
+        if (remainder.compareTo(BigDecimal.ZERO) == 0)
+        {
             return price;
         }
 
-        BigDecimal result = price.subtract(remainder);
-        if (roundingMode == RoundingMode.UP) {
+        final BigDecimal result = price.subtract(remainder);
+        if (roundingMode == RoundingMode.UP)
+        {
             return result.add(tickSize);
-        } else {
+        }
+        else
+        {
             return result;
         }
     }

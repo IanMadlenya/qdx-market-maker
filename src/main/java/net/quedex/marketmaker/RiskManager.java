@@ -11,8 +11,8 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RiskManager implements OpenPositionListener {
-
+public class RiskManager implements OpenPositionListener
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(RiskManager.class);
 
     private final InstrumentManager instrumentManager;
@@ -27,11 +27,11 @@ public class RiskManager implements OpenPositionListener {
     private double totalTheta = 0;
 
     public RiskManager(
-            InstrumentManager instrumentManager,
-            FairPriceProvider fairVolatilityProvider,
-            FairPriceProvider futuresFairPriceProvider,
-            Pricing pricing
-    ) {
+        final InstrumentManager instrumentManager,
+        final FairPriceProvider fairVolatilityProvider,
+        final FairPriceProvider futuresFairPriceProvider,
+        final Pricing pricing)
+    {
         this.instrumentManager = checkNotNull(instrumentManager, "null instrumentManager");
         this.fairVolatilityProvider = checkNotNull(fairVolatilityProvider, "null fairVolatilityProvider");
         this.futuresFairPriceProvider = checkNotNull(futuresFairPriceProvider, "null futuresFairPriceProvider");
@@ -39,37 +39,47 @@ public class RiskManager implements OpenPositionListener {
     }
 
     @Override
-    public void onOpenPosition(OpenPosition openPosition) {
+    public void onOpenPosition(final OpenPosition openPosition)
+    {
         LOGGER.trace("onOpenPosition({})", openPosition);
         openPositions.put(openPosition.getInstrumentId(), openPosition);
     }
 
-    private void updateGreeks() {
+    private void updateGreeks()
+    {
         totalDelta = 0;
         totalVega = 0;
         totalGammaP = 0;
         totalTheta = 0;
-        for (final Map.Entry<Integer, OpenPosition> openPosition : openPositions.entrySet()) {
 
-            int openPositionSigned = openPosition.getValue().getQuantitySigned();
-            Instrument positionInstrument = instrumentManager.getInstrument(openPosition.getKey());
+        for (final Map.Entry<Integer, OpenPosition> openPosition : openPositions.entrySet())
+        {
+            final int openPositionSigned = openPosition.getValue().getQuantitySigned();
+            final Instrument positionInstrument = instrumentManager.getInstrument(openPosition.getKey());
 
-            double futuresPrice = futuresFairPriceProvider.getFairPrice(
-                    instrumentManager.getFuturesAtExpiration(positionInstrument.getExpirationDate()).getInstrumentId()
+            final double futuresPrice = futuresFairPriceProvider.getFairPrice(
+                instrumentManager.getFuturesAtExpiration(positionInstrument.getExpirationDate()).getInstrumentId()
             ).doubleValue();
 
-            Pricing.Metrics metrics = pricing.calculateMetrics(
-                    positionInstrument,
-                    fairVolatilityProvider.getFairPrice(positionInstrument.getInstrumentId()).doubleValue(),
-                    futuresPrice
+            final Pricing.Metrics metrics = pricing.calculateMetrics(
+                positionInstrument,
+                fairVolatilityProvider.getFairPrice(positionInstrument.getInstrumentId()).doubleValue(),
+                futuresPrice
             );
 
-            double positionDelta = openPositionSigned * metrics.getDelta(); // per contract
-            double positionGammaP = openPositionSigned * metrics.getGammaP(); // per contract
-            double positionTheta = openPositionSigned * metrics.getTheta() * positionInstrument.getNotionalAmount(); // per notional
-            double positionVega = openPositionSigned * metrics.getVega() * positionInstrument.getNotionalAmount(); // per notional
-            LOGGER.debug("Position {}: {}, delta={}, vega={}, gammaP={}, theta={}",
-                    openPosition.getKey(), openPositionSigned, positionDelta, positionVega, positionGammaP, positionTheta);
+            final double positionDelta = openPositionSigned * metrics.getDelta(); // per contract
+            final double positionGammaP = openPositionSigned * metrics.getGammaP(); // per contract
+            final double positionTheta = openPositionSigned
+                * metrics.getTheta()
+                * positionInstrument.getNotionalAmount(); // per notional
+            final double positionVega = openPositionSigned
+                * metrics.getVega()
+                * positionInstrument.getNotionalAmount(); // per notional
+
+            LOGGER.debug(
+                "Position {}: {}, delta={}, vega={}, gammaP={}, theta={}",
+                openPosition.getKey(), openPositionSigned, positionDelta, positionVega, positionGammaP, positionTheta
+            );
 
             totalDelta += positionDelta;
             totalVega += positionVega;
@@ -82,14 +92,16 @@ public class RiskManager implements OpenPositionListener {
     /**
      * @return total delta of traded instruments
      */
-    public double getTotalDelta() {
+    public double getTotalDelta()
+    {
         return totalDelta;
     }
 
     /**
      * @return total vega of traded instrumetns
      */
-    public double getTotalVega() {
+    public double getTotalVega()
+    {
         return totalVega;
     }
 }

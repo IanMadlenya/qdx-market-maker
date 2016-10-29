@@ -1,7 +1,7 @@
 package net.quedex.marketmaker;
 
 @FunctionalInterface
-public interface TimeProvider {
-
+public interface TimeProvider
+{
     long getCurrentTime();
 }

@@ -10,17 +10,23 @@ import java.math.BigDecimal;
 
 import static com.google.common.base.Preconditions.*;
 
-public class GenericOrder {
-
+public class GenericOrder
+{
     private final int instrumentId;
     private final OrderSide side;
     private final BigDecimal price;
     private int quantity;
     private final int initialQuantity;
 
-    public GenericOrder(int instrumentId, OrderSide side, BigDecimal price, int initialQuantity) {
+    public GenericOrder(
+        final int instrumentId,
+        final OrderSide side,
+        final BigDecimal price,
+        final int initialQuantity)
+    {
         checkArgument(price.compareTo(BigDecimal.ZERO) > 0, "price=%s <= 0", price);
         checkArgument(initialQuantity > 0, "initialQuantity=%s <= 0", initialQuantity);
+
         this.instrumentId = instrumentId;
         this.side = checkNotNull(side, "null side");
         this.price = price;
@@ -28,7 +34,8 @@ public class GenericOrder {
         this.initialQuantity = initialQuantity;
     }
 
-    public GenericOrder(OrderPlaced orderPlaced) {
+    public GenericOrder(final OrderPlaced orderPlaced)
+    {
         this.instrumentId = orderPlaced.getInstrumentId();
         this.side = orderPlaced.getSide();
         this.price = orderPlaced.getPrice();
@@ -36,74 +43,92 @@ public class GenericOrder {
         this.initialQuantity = orderPlaced.getInitialQuantity();
     }
 
-    public int getInstrumentId() {
+    public int getInstrumentId()
+    {
         return instrumentId;
     }
 
-    public  OrderSide getSide() {
+    public OrderSide getSide()
+    {
         return side;
     }
 
-    public BigDecimal getPrice() {
+    public BigDecimal getPrice()
+    {
         return price;
     }
 
-    public int getQuantity() {
+    public int getQuantity()
+    {
         return quantity;
     }
 
-    public int getInitialQuantity() {
+    public int getInitialQuantity()
+    {
         return initialQuantity;
     }
 
-    public int getFilledQuantity() {
+    public int getFilledQuantity()
+    {
         return initialQuantity - quantity;
     }
 
-    public boolean isFullyFilled() {
+    public boolean isFullyFilled()
+    {
         return quantity == 0;
     }
 
-    public void fill(int filledQuantity) {
+    public void fill(final int filledQuantity)
+    {
         quantity -= filledQuantity;
         checkState(quantity >= 0, "quantity=%s < 0 after fill", quantity);
     }
 
-    public LimitOrderSpec toLimitOrderSpec(long clientOrderId) {
+    public LimitOrderSpec toLimitOrderSpec(final long clientOrderId)
+    {
         return new LimitOrderSpec(
-                clientOrderId,
-                instrumentId,
-                side,
-                initialQuantity,
-                price
+            clientOrderId,
+            instrumentId,
+            side,
+            initialQuantity,
+            price
         );
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        GenericOrder that = (GenericOrder) o;
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        final GenericOrder that = (GenericOrder) o;
         return instrumentId == that.instrumentId &&
-                quantity == that.quantity &&
-                initialQuantity == that.initialQuantity &&
-                side == that.side &&
-                Objects.equal(price, that.price);
+            quantity == that.quantity &&
+            initialQuantity == that.initialQuantity &&
+            side == that.side &&
+            Objects.equal(price, that.price);
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hashCode(instrumentId, side, price, quantity, initialQuantity);
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return MoreObjects.toStringHelper(this)
-                .add("instrumentId", instrumentId)
-                .add("side", side)
-                .add("price", price)
-                .add("quantity", quantity)
-                .add("initialQuantity", initialQuantity)
-                .toString();
+            .add("instrumentId", instrumentId)
+            .add("side", side)
+            .add("price", price)
+            .add("quantity", quantity)
+            .add("initialQuantity", initialQuantity)
+            .toString();
     }
 }

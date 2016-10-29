@@ -13,46 +13,59 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class Main {
-    private Main() { throw new AssertionError(); }
+public class Main
+{
+    private Main()
+    {
+        throw new AssertionError();
+    }
 
-    public static void main(String... args) throws Exception {
-
-        if (args.length != 0 && args.length != 2) {
+    public static void main(final String... args) throws Exception
+    {
+        if (args.length != 0 && args.length != 2)
+        {
             printUsageAndExit();
         }
 
-        InputStream qdxConfigIS;
-        String mmConfigPath;
+        final InputStream qdxConfigIS;
+        final String mmConfigPath;
 
-        if (args.length > 0) {
+        if (args.length > 0)
+        {
             qdxConfigIS = Files.newInputStream(Paths.get(args[0]));
             mmConfigPath = args[1];
-        } else {
+        }
+        else
+        {
             qdxConfigIS = Resources.getResource("quedex-config.properties").openStream();
             mmConfigPath = Resources.getResource("market-maker.properties").toString();
         }
 
-        Config qdxConfig = Config.fromInputStream(qdxConfigIS, "qwer".toCharArray());
-        MarketData marketData = new HttpMarketData(qdxConfig);
-        MarketStream marketStream = new WebsocketMarketStream(qdxConfig);
-        UserStream userStream = new WebsocketUserStream(qdxConfig);
+        final Config qdxConfig = Config.fromInputStream(qdxConfigIS, "qwer".toCharArray());
+        final MarketData marketData = new HttpMarketData(qdxConfig);
+        final MarketStream marketStream = new WebsocketMarketStream(qdxConfig);
+        final UserStream userStream = new WebsocketUserStream(qdxConfig);
 
 
-        MarketMakerRunner mm = new MarketMakerRunner(
-                marketData,
-                marketStream,
-                userStream,
-                MarketMakerConfiguration.fromPropertiesFile(mmConfigPath)
+        final MarketMakerRunner mm = new MarketMakerRunner(
+            marketData,
+            marketStream,
+            userStream,
+            MarketMakerConfiguration.fromPropertiesFile(mmConfigPath)
         );
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
             @Override
-            public void run() {
+            public void run()
+            {
                 mm.stop();
-                try {
+                try
+                {
                     Thread.sleep(10_000);
-                } catch (InterruptedException e) {
+                }
+                catch (final InterruptedException e)
+                {
                     Thread.currentThread().interrupt();
                 }
             }
@@ -61,7 +74,8 @@ public class Main {
         mm.runLoop();
     }
 
-    private static void printUsageAndExit() {
+    private static void printUsageAndExit()
+    {
         System.out.println("Usage: java -jar <jar name> <Quedex properties filename> <market maker properties file name>");
         System.exit(1);
     }

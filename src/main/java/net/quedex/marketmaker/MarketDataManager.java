@@ -14,39 +14,49 @@ import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class MarketDataManager implements QuotesListener {
-
+public class MarketDataManager implements QuotesListener
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketDataManager.class);
     private static final BigDecimal TWO = BigDecimal.valueOf(2);
 
     private final Map<Integer, Quotes> instrumentIdToQuotes = new HashMap<>();
 
-    public BigDecimal getLastTradePrice(int instrumentId) {
-        Quotes quotes = instrumentIdToQuotes.get(instrumentId);
+    public BigDecimal getLastTradePrice(final int instrumentId)
+    {
+        final Quotes quotes = instrumentIdToQuotes.get(instrumentId);
         checkArgument(quotes != null, "No quotes for %s", instrumentId);
         return quotes.getLast();
     }
 
-    public BigDecimal getMid(int instrumentId) {
-        Quotes quotes = instrumentIdToQuotes.get(instrumentId);
+    public BigDecimal getMid(final int instrumentId)
+    {
+        final Quotes quotes = instrumentIdToQuotes.get(instrumentId);
         checkArgument(quotes != null, "No quotes for %s", instrumentId);
 
-        Optional<BigDecimal> bidPrice = quotes.getBid().orElse(new PriceQuantity(0)).getPrice();
-        Optional<BigDecimal> askPrice = quotes.getAsk().orElse(new PriceQuantity(0)).getPrice();
+        final Optional<BigDecimal> bidPrice = quotes.getBid().orElse(new PriceQuantity(0)).getPrice();
+        final Optional<BigDecimal> askPrice = quotes.getAsk().orElse(new PriceQuantity(0)).getPrice();
 
-        if (bidPrice.isPresent() && askPrice.isPresent()) {
+        if (bidPrice.isPresent() && askPrice.isPresent())
+        {
             return bidPrice.get().add(askPrice.get()).divide(TWO, 8, RoundingMode.HALF_EVEN);
-        } else if (bidPrice.isPresent()) {
+        }
+        else if (bidPrice.isPresent())
+        {
             return bidPrice.get();
-        } else if (askPrice.isPresent()) {
+        }
+        else if (askPrice.isPresent())
+        {
             return askPrice.get();
-        } else {
+        }
+        else
+        {
             return quotes.getLast(); // use last in case of empty OB
         }
     }
 
     @Override
-    public void onQuotes(Quotes quotes) {
+    public void onQuotes(final Quotes quotes)
+    {
         LOGGER.trace("{}", quotes);
         instrumentIdToQuotes.put(quotes.getInstrumentId(), quotes);
     }
