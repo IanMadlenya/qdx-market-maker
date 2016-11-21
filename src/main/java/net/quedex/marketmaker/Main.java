@@ -9,9 +9,15 @@ import net.quedex.api.market.WebsocketMarketStream;
 import net.quedex.api.user.UserStream;
 import net.quedex.api.user.WebsocketUserStream;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class Main
 {
@@ -41,7 +47,11 @@ public class Main
             mmConfigPath = Resources.getResource("market-maker.properties").toString();
         }
 
-        final Config qdxConfig = Config.fromInputStream(qdxConfigIS, "qwer".toCharArray());
+        final char[] keyPassword = readPassphrase();
+
+        final Config qdxConfig = Config.fromInputStream(qdxConfigIS, keyPassword);
+        Arrays.fill(keyPassword, (char) 2);
+
         final MarketData marketData = new HttpMarketData(qdxConfig);
         final MarketStream marketStream = new WebsocketMarketStream(qdxConfig);
         final UserStream userStream = new WebsocketUserStream(qdxConfig);
@@ -72,6 +82,20 @@ public class Main
         });
 
         mm.runLoop();
+    }
+
+    private static char[] readPassphrase() throws IOException
+    {
+        System.out.println("Private key passphrase (will be echoed):");
+
+        final char[] input = new char[100];
+        final int read = new InputStreamReader(System.in, StandardCharsets.US_ASCII).read(input);
+        checkState(read != 100, "Input too long");
+
+        final char[] keyPassword = Arrays.copyOfRange(input, 0, read - 1); // -1 because we don't want \n
+        Arrays.fill(input, (char) 5);
+
+        return keyPassword;
     }
 
     private static void printUsageAndExit()
